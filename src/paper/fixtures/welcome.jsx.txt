@@ -1,0 +1,60 @@
+(
+    <div style={{ backgroundColor: 'var(--color-ground)', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', fontSize: '12px', fontSynthesis: 'none', height: '844px', lineHeight: '16px', MozOsxFontSmoothing: 'grayscale', overflow: 'clip', overflowWrap: 'anywhere', position: 'relative', WebkitFontSmoothing: 'antialiased', width: '390px' }}>
+      <div style={{ alignItems: 'center', boxSizing: 'border-box', display: 'flex', flexShrink: '0', gap: '154px', paddingBottom: '19px', paddingInline: '24px', paddingTop: '21px' }}>
+        <div style={{ alignItems: 'center', boxSizing: 'border-box', display: 'flex', flexBasis: '0%', flexDirection: 'column', flexGrow: '1', justifyContent: 'center' }}>
+          <div style={{ boxSizing: 'border-box', color: '#211F1A', fontFamily: 'system-ui, sans-serif', fontSize: '17px', fontWeight: 600, lineHeight: '22px', textAlign: 'center', width: 'max-content' }}>
+            9:41
+          </div>
+        </div>
+        <div style={{ alignItems: 'center', boxSizing: 'border-box', display: 'flex', flexBasis: '0%', flexDirection: 'column', flexGrow: '1', justifyContent: 'center' }}>
+          <svg width="82" height="22" viewBox="0 0 82 22" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: '0', display: 'inline-block' }}>
+            <path d="M3.7 13H2.5a1 1 0 0 0-1 1v2.5a1 1 0 0 0 1 1h1.2a1 1 0 0 0 1-1V14a1 1 0 0 0-1-1m5.2-2.5H7.7a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h1.2a1 1 0 0 0 1-1v-5a1 1 0 0 0-1-1M14.1 8h-1.2a1 1 0 0 0-1 1v7.5a1 1 0 0 0 1 1h1.2a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1m5.2-2.5h-1.2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h1.2a1 1 0 0 0 1-1v-10a1 1 0 0 0-1-1" fill="#211F1A" />
+            <path fillRule="evenodd" d="M36.57 7.8c2.490 0 4.88.92 6.68 2.58.14.13.36.12.49 0l1.3-1.27a.34.34 0 0 0 0-.5 12.55 12.55 0 0 0-16.93 0 .34.34 0 0 0 0 .5l1.3 1.26c.13.13.34.14.48 0a10 10 0 0 1 6.68-2.57m0 4.22a5.4 5.4 0 0 1 3.67 1.44c.14.13.35.13.48 0l1.3-1.33a.37.37 0 0 0-.01-.52 7.9 7.9 0 0 0-10.88 0 .37.37 0 0 0 0 .52l1.290 1.32c.13.14.34.14.48 0 1-.92 2.31-1.43 3.67-1.43m2.52 2.8q0 .15-.1.28l-2.18 2.45a.3.3 0 0 1-.24.11.3.3 0 0 1-.24-.1l-2.18-2.46a.43.43 0 0 1 .01-.56 3.44 3.44 0 0 1 4.82 0 .4.4 0 0 1 .11.28" clipRule="evenodd" fill="#211F1A" />
+            <path fillRule="evenodd" d="M70.5 5c2.05 0 3.08 0 3.88.34a4.3 4.3 0 0 1 2.28 2.28c.34.8.34 1.83.34 3.88s0 3.08-.34 3.88a4.3 4.3 0 0 1-2.28 2.28c-.8.34-1.83.34-3.88.34h-12c-2.05 0-3.08 0-3.88-.34a4.3 4.3 0 0 1-2.28-2.28c-.34-.8-.34-1.830-.34-3.88s0-3.08.34-3.88a4.3 4.3 0 0 1 2.28-2.28C55.42 5 56.45 5 58.5 5zM58.28 6c-1.85 0-2.77 0-3.48.36a3.3 3.3 0 0 0-1.44 1.44C53 8.5 53 9.43 53 11.28v.44c0 1.85 0 2.77.36 3.48a3.3 3.3 0 0 0 1.44 1.44c.7.36 1.63.36 3.48.36h12.44c1.85 0 2.77 0 3.48-.36a3.3 3.3 0 0 0 1.44-1.44c.36-.7.36-1.63.36-3.48v-.44c0-1.85 0-2.77-.36-3.48a3.3 3.3 0 0 0-1.44-1.44C73.5 6 72.57 6 70.72 6z" clipRule="evenodd" fill="#211F1A" style={{ opacity: '0.35' }} />
+            <path d="M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z" fill="#211F1A" />
+            <path d="M4 20c4-10 12-14 16-16c-2 6-6 14-16 16z" fill="#211F1A" style={{ opacity: '0.35' }} />
+          </svg>
+        </div>
+      </div>
+      <div style={{ boxSizing: 'border-box', flexShrink: '0', height: '330px', position: 'relative', width: '390px' }}>
+        <div style={{ backgroundImage: 'url(https://app.paper.design/file-assets/01M5GP4SB48JXZSDC64ZP4FY0A/72BYEAJXHKE3PPM9X425ZFP65N.png)', backgroundPosition: '50%', backgroundRepeat: 'no-repeat', backgroundSize: '100% 100%', boxSizing: 'border-box', height: '250px', left: '62px', position: 'absolute', rotate: '-5deg', top: '20px', transformOrigin: '0% 0%', width: '250px' }} />
+        <div style={{ backgroundImage: 'url(https://app.paper.design/file-assets/01M5GP4SB48JXZSDC64ZP4FY0A/0KS9RKGBXPKNJCPRK960KPXXDW.png)', backgroundPosition: '50%', backgroundRepeat: 'no-repeat', backgroundSize: '100% 100%', boxSizing: 'border-box', height: '180px', left: '178px', position: 'absolute', rotate: '5deg', top: '150px', transformOrigin: '0% 0%', width: '180px' }} />
+        <div style={{ backgroundImage: 'url(https://app.paper.design/file-assets/01M5GP4SB48JXZSDC64ZP4FY0A/1D1B1WHYCPHXT8A0HVR18TX1WC.png)', backgroundPosition: '50%', backgroundRepeat: 'no-repeat', backgroundSize: '100% 100%', boxSizing: 'border-box', height: '120px', left: '238px', position: 'absolute', rotate: '-8deg', top: '70px', transformOrigin: '0% 0%', width: '120px' }} />
+        <div style={{ backgroundImage: 'url(https://app.paper.design/file-assets/01M5GP4SB48JXZSDC64ZP4FY0A/7QN16GWRXMQ7DBYM0NARNZS082.png)', backgroundPosition: '50%', backgroundRepeat: 'no-repeat', backgroundSize: '100% 100%', boxSizing: 'border-box', height: '170px', left: '18px', position: 'absolute', rotate: '8deg', top: '176px', transformOrigin: '0% 0%', width: '170px' }} />
+        <div style={{ backgroundColor: 'var(--color-tape)', borderRadius: '2px', boxSizing: 'border-box', fontFamily: 'var(--font-display)', left: '236px', paddingBlock: '3px', paddingInline: '10px', position: 'absolute', rotate: '-3deg', top: '294px', transformOrigin: '0% 0%', whiteSpace: 'nowrap' }}>
+          <div style={{ boxSizing: 'border-box', color: 'var(--color-ink)', fontFamily: 'var(--font-display)', fontFeatureSettings: '"lnum"', fontSize: '16px', lineHeight: '20px', whiteSpace: 'pre-wrap', width: 'max-content' }}>
+            3 days
+          </div>
+        </div>
+        <div style={{ backgroundColor: 'var(--color-tape)', borderRadius: '2px', boxSizing: 'border-box', fontFamily: 'var(--font-display)', left: '56px', paddingBlock: '3px', paddingInline: '10px', position: 'absolute', rotate: '2deg', top: '292px', transformOrigin: '0% 0%', whiteSpace: 'nowrap' }}>
+          <div style={{ boxSizing: 'border-box', color: 'var(--color-ink)', fontFamily: 'var(--font-display)', fontSize: '16px', lineHeight: '20px', whiteSpace: 'pre-wrap', width: 'max-content' }}>
+            Today
+          </div>
+        </div>
+      </div>
+      <div style={{ boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '14px', paddingInline: '28px', paddingTop: '36px' }}>
+        <div style={{ alignItems: 'baseline', boxSizing: 'border-box', display: 'flex', gap: '4px' }}>
+          <div style={{ boxSizing: 'border-box', color: 'var(--color-leaf)', fontFamily: 'var(--font-brand)', fontSize: '56px', fontWeight: 500, letterSpacing: '-0.06em', lineHeight: '100%' }}>
+            greenhouse
+          </div>
+          <div style={{ backgroundColor: 'var(--color-apricot)', borderRadius: '6px', boxSizing: 'border-box', flexShrink: '0', height: '11px', width: '11px' }} />
+        </div>
+        <div style={{ boxSizing: 'border-box', color: 'var(--color-ink)', fontFamily: 'var(--font-display)', fontSize: '28px', lineHeight: '34px' }}>
+          Water what's thirsty, and nothing else.
+        </div>
+        <div style={{ boxSizing: 'border-box', color: 'var(--color-ink-2)', fontFamily: 'var(--font-ui)', fontSize: '15px', lineHeight: '22px' }}>
+          Snap each plant once. Greenhouse learns its rhythm and taps you when the soil runs dry.
+        </div>
+      </div>
+      <div style={{ bottom: '0px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '6px', left: '0px', paddingBottom: '34px', paddingInline: '20px', paddingTop: '12px', position: 'absolute', width: '390px' }}>
+        <div style={{ alignItems: 'center', backgroundColor: 'var(--color-leaf)', borderRadius: '16px', boxSizing: 'border-box', display: 'flex', flexShrink: 0, fontFamily: 'var(--font-ui)', height: '54px', justifyContent: 'center' }}>
+          <div style={{ boxSizing: 'border-box', color: 'var(--color-surface)', fontFamily: 'var(--font-ui)', fontSize: '17px', fontWeight: 600, lineHeight: '22px' }}>
+            Add your first plant
+          </div>
+        </div>
+        <div style={{ alignContent: 'center', boxSizing: 'border-box', color: 'var(--color-ink-2)', flexShrink: 0, fontFamily: 'var(--font-ui)', fontSize: '15px', fontWeight: 500, height: '44px', lineHeight: '18px', textAlign: 'center' }}>
+          Look around first
+        </div>
+      </div>
+    </div>
+  )

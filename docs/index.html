@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moodboard</title>
+<meta name="description" content="A Mac app that puts your React components on an endless wall, running live. Move a dial and it rewrites your source. Free and open source.">
+<meta property="og:title" content="Moodboard">
+<meta property="og:description" content="Your components, on a wall, running. Move a dial and it rewrites your source.">
+<meta property="og:image" content="https://shariqmalik10.github.io/moodboard/shots/wall.jpg">
+<meta property="og:url" content="https://shariqmalik10.github.io/moodboard/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#f3f0e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161618'/%3E%3Cg fill='%23e9e4d6'%3E%3Crect x='5' y='6' width='6' height='9' rx='1.5'/%3E%3Crect x='5' y='17' width='6' height='9' rx='1.5'/%3E%3Crect x='13' y='6' width='6' height='6' rx='1.5'/%3E%3Crect x='13' y='14' width='6' height='12' rx='1.5'/%3E%3Crect x='21' y='6' width='6' height='11' rx='1.5'/%3E%3Crect x='21' y='19' width='6' height='7' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f3f0e8;
+  --ink: #1d1b17;
+  --muted: #6b6458;
+  --line: #ddd7c9;
+  --raised: #fbfaf6;
+  --accent: #3d6b47;
+  --accent-ink: #ffffff;
+  --stage: #161618;
+  --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121214;
+    --ink: #ecebe6;
+    --muted: #9b988f;
+    --line: #2a2a2e;
+    --raised: #1b1b1e;
+    --accent: #84b58f;
+    --accent-ink: #10150f;
+    --stage: #0b0b0c;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121214;
+  --ink: #ecebe6;
+  --muted: #9b988f;
+  --line: #2a2a2e;
+  --raised: #1b1b1e;
+  --accent: #84b58f;
+  --accent-ink: #10150f;
+  --stage: #0b0b0c;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 17px/1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+img { display: block; max-width: 100%; height: auto; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+.wrap { width: min(1160px, 100% - 32px); margin-inline: auto; }
+
+/* Header */
+.top { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; text-decoration: none; letter-spacing: -0.01em; }
+.brand svg { width: 26px; height: 26px; }
+.top nav { display: flex; gap: 22px; font-size: 15px; }
+.top nav a { text-decoration: none; color: var(--muted); }
+.top nav a:hover { color: var(--ink); }
+
+/* Hero */
+.hero { padding: 56px 0 40px; display: grid; gap: 22px; max-width: 760px; }
+h1, h2 { font-family: var(--serif); font-weight: 500; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(40px, 7vw, 76px); line-height: 1.02; letter-spacing: -0.025em; }
+h2 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; letter-spacing: -0.015em; }
+.lede { font-size: clamp(18px, 2.2vw, 21px); color: var(--muted); margin: 0; max-width: 620px; text-wrap: pretty; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 6px; }
+.button {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 18px; border-radius: 10px;
+  font: 600 15px/1 var(--sans); text-decoration: none;
+  border: 1px solid var(--line); background: var(--raised); color: var(--ink);
+  transition: transform 120ms ease-out, background-color 150ms;
+}
+.button:active { transform: scale(0.97); }
+.button.primary { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
+.fine { font-size: 14px; color: var(--muted); }
+
+.shot { border-radius: 14px; box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 30px 80px -30px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,0,0,0.08); }
+.wall { margin: 8px 0 0; }
+
+section { padding: 96px 0 0; }
+.head { display: grid; gap: 14px; max-width: 640px; margin-bottom: 36px; }
+.head p { margin: 0; color: var(--muted); text-wrap: pretty; }
+
+/* The miniature */
+.mini {
+  display: grid; grid-template-columns: 1fr 300px;
+  background: var(--stage); border-radius: 18px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #e9e7e1;
+}
+.stage { display: grid; place-items: center; padding: 56px 24px; min-height: 380px; }
+.plant {
+  --radius: 18px; --pad: 24px; --title: 30px; --button: 12px;
+  width: min(340px, 100%);
+  background: #fbfaf6; color: #2a261f;
+  border: 1px solid #e3ddcf;
+  border-radius: var(--radius); padding: var(--pad);
+  box-shadow: 0 18px 40px -20px rgba(0,0,0,0.6);
+  display: grid; gap: 14px;
+  font: 15px/1.4 var(--sans);
+}
+.plant .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.plant h3 { margin: 0; font: 500 var(--title)/1.05 var(--serif); letter-spacing: -0.015em; }
+.plant p { margin: 4px 0 0; color: #6b6458; }
+.plant .pot { width: 44px; height: 44px; flex: none; }
+.plant .thirst { height: 8px; border-radius: 99px; background: #efebe1; overflow: hidden; }
+.plant .thirst i { display: block; height: 100%; width: 86%; background: #c4683f; border-radius: inherit; }
+.plant .foot { display: flex; justify-content: space-between; align-items: center; }
+.plant .foot span { color: #6b6458; }
+.plant button {
+  font: 600 15px/1 var(--sans); color: #fff; background: #3d6b47; border: 0;
+  padding: 11px 18px; border-radius: var(--button); cursor: pointer;
+  transition: transform 120ms ease-out, background-color 200ms;
+}
+.plant button:active { transform: scale(0.96); }
+.plant button[data-done] { background: #9fb8a4; }
+
+.panel { background: #1f1f22; border-left: 1px solid rgba(255,255,255,0.06); padding: 18px 16px; display: grid; align-content: start; gap: 8px; }
+.panel .title { font-weight: 600; font-size: 15px; margin: 0 0 6px; }
+.panel .group { font-size: 13px; color: #9b988f; margin: 8px 0 0; }
+.dial {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  height: 36px; padding: 0 12px; border-radius: 8px; overflow: hidden;
+  background: #2b2b2f; font-size: 14px; cursor: ew-resize;
+  touch-action: pan-y;
+}
+.dial .fill { position: absolute; inset: 0 auto 0 0; width: var(--p, 50%); background: #45454b; pointer-events: none; }
+.dial span, .dial output { position: relative; pointer-events: none; font-variant-numeric: tabular-nums; }
+.dial input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; }
+.dial:has(input:focus-visible) { outline: 2px solid #84b58f; outline-offset: 2px; }
+.panel .edits { margin-top: 10px; font-size: 12px; color: #9b988f; font-family: var(--mono); }
+
+.code {
+  grid-column: 1 / -1; margin: 0; padding: 20px 22px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  background: #121214; color: #c9c6bd;
+  font: 13.5px/1.75 var(--mono); overflow-x: auto; white-space: pre;
+}
+.code .k { color: #9b988f; }
+.code .s { color: #d6c08f; }
+.code .t { color: #8fb7d6; }
+.lit {
+  font: inherit; color: #f4efe2; background: rgba(132,181,143,0.14);
+  border: 0; border-radius: 4px; padding: 0 1px; margin: 0;
+  width: calc(var(--w, 2) * 1ch + 2px); text-align: center;
+  transition: background-color 400ms ease-out;
+}
+.lit:focus { outline: 1px solid #84b58f; background: rgba(132,181,143,0.25); }
+.lit.flash { background: rgba(132,181,143,0.55); transition: none; }
+.hint { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+
+/* Shots */
+.pair { display: grid; grid-template-columns: 1.45fr 1fr; gap: 28px; align-items: start; }
+figure { margin: 0; display: grid; gap: 14px; }
+figcaption { font-size: 15px; color: var(--muted); text-wrap: pretty; }
+figcaption b { color: var(--ink); font-weight: 600; }
+
+/* Connects */
+.links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.links div { background: var(--bg); padding: 24px; }
+.links h3 { margin: 0 0 6px; font-size: 17px; }
+.links p { margin: 0; color: var(--muted); font-size: 15px; }
+
+/* Install */
+.ways { display: grid; gap: 14px; }
+.way { border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--raised); display: grid; gap: 12px; }
+.way h3 { margin: 0; font-size: 17px; }
+.way p { margin: 0; color: var(--muted); font-size: 15px; }
+.cmd { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 6px 6px 6px 14px; min-width: 0; }
+.cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: 13.5px/2 var(--mono); }
+.copy { flex: none; font: 600 13px/1 var(--sans); padding: 8px 12px; border-radius: 7px; border: 1px solid var(--line); background: var(--raised); color: var(--ink); cursor: pointer; }
+.copy:active { transform: scale(0.96); }
+
+footer { margin-top: 96px; padding: 28px 0 40px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; font-size: 14px; color: var(--muted); }
+
+@media (max-width: 860px) {
+  .mini { grid-template-columns: 1fr; }
+  .panel { border-left: 0; border-top: 1px solid rgba(255,255,255,0.06); }
+  .pair, .links { grid-template-columns: 1fr; }
+  section { padding-top: 72px; }
+  .hero { padding-top: 32px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, .lit { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<header class="wrap top">
+  <a class="brand" href="./" aria-label="Moodboard home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#161618"/><g fill="#e9e4d6"><rect x="5" y="6" width="6" height="9" rx="1.5"/><rect x="5" y="17" width="6" height="9" rx="1.5"/><rect x="13" y="6" width="6" height="6" rx="1.5"/><rect x="13" y="14" width="6" height="12" rx="1.5"/><rect x="21" y="6" width="6" height="11" rx="1.5"/><rect x="21" y="19" width="6" height="7" rx="1.5"/></g></svg>
+    Moodboard
+  </a>
+  <nav>
+    <a href="#install">Install</a>
+    <a href="https://github.com/shariqmalik10/moodboard">GitHub</a>
+  </nav>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Your components, on a wall, running.</h1>
+      <p class="lede">A Mac app for people who build interfaces. Connect a Next.js project and every component plays on an endless wall. Move a dial and it rewrites your source.</p>
+      <div class="actions">
+        <a class="button primary" href="#install">Install</a>
+        <a class="button" href="https://github.com/shariqmalik10/moodboard">View the source</a>
+        <span class="fine">Free and open source. Runs on your Mac and sends nothing anywhere.</span>
+      </div>
+    </div>
+    <img class="shot wall" src="shots/wall.webp" width="1920" height="1227" alt="The Moodboard wall: columns of live plant-care components from the Greenhouse demo, such as room tabs, care notes, a sun stepper and a leaf rating, each with a cursor playing it.">
+  </div>
+
+  <section class="wrap" aria-labelledby="dials">
+    <div class="head">
+      <h2 id="dials">Move a dial. The code moves with it.</h2>
+      <p>Every dial is a literal in your file, such as a Tailwind class or an inline style. Drag one and Moodboard rewrites that literal while you drag. Edit the file and the tile redraws. Try both here.</p>
+    </div>
+    <div class="mini">
+      <div class="stage">
+        <article class="plant" id="plant">
+          <div class="row">
+            <div>
+              <h3>Monstera</h3>
+              <p>Kitchen window</p>
+            </div>
+            <svg class="pot" viewBox="0 0 44 44" aria-hidden="true"><path d="M22 26V12" stroke="#3d6b47" stroke-width="2.4" stroke-linecap="round"/><path d="M22 17c-1-5-5-7-9-6 0 4 4 7 9 6Z" fill="#3d6b47"/><path d="M22 14c1-5 5-7 10-6-1 5-5 7-10 6Z" fill="#5f8c69"/><path d="M12 26h20l-2.6 12H14.6Z" fill="#c4683f"/><rect x="11" y="24" width="22" height="4" rx="1" fill="#a9552f"/></svg>
+          </div>
+          <div class="thirst" aria-hidden="true"><i></i></div>
+          <div class="foot">
+            <span id="status">Thirsty today</span>
+            <button type="button" id="water">Water</button>
+          </div>
+        </article>
+      </div>
+      <div class="panel" aria-label="Dials">
+        <p class="title">Plant card</p>
+        <p class="group">Card</p>
+        <label class="dial"><span class="fill"></span><span>Radius</span><output>18</output><input type="range" min="0" max="40" value="18" data-key="radius" aria-label="Card radius"></label>
+        <label class="dial"><span class="fill"></span><span>Padding</span><output>24</output><input type="range" min="8" max="48" value="24" data-key="pad" aria-label="Card padding"></label>
+        <p class="group">Title</p>
+        <label class="dial"><span class="fill"></span><span>Text size</span><output>30</output><input type="range" min="16" max="44" value="30" data-key="title" aria-label="Title text size"></label>
+        <p class="group">Button</p>
+        <label class="dial"><span class="fill"></span><span>Radius</span><output>12</output><input type="range" min="0" max="24" value="12" data-key="button" aria-label="Button radius"></label>
+        <p class="edits">Dials edit PlantCard.tsx</p>
+      </div>
+<pre class="code" aria-label="PlantCard.tsx, with editable numbers"><span class="k">export function</span> <span class="t">PlantCard</span>() {
+  <span class="k">return</span> (
+    &lt;<span class="t">article</span> className=<span class="s">"rounded-[<input class="lit" data-key="radius" value="18" inputmode="numeric" aria-label="Card radius in code">px] p-[<input class="lit" data-key="pad" value="24" inputmode="numeric" aria-label="Card padding in code">px] bg-paper"</span>&gt;
+      &lt;<span class="t">h3</span> className=<span class="s">"text-[<input class="lit" data-key="title" value="30" inputmode="numeric" aria-label="Title text size in code">px] font-serif"</span>&gt;Monstera&lt;/<span class="t">h3</span>&gt;
+      &lt;<span class="t">p</span> className=<span class="s">"text-loam"</span>&gt;Kitchen window&lt;/<span class="t">p</span>&gt;
+      &lt;<span class="t">Thirst</span> level={<span class="s">0.86</span>} /&gt;
+      &lt;<span class="t">button</span> className=<span class="s">"rounded-[<input class="lit" data-key="button" value="12" inputmode="numeric" aria-label="Button radius in code">px] bg-leaf"</span>&gt;Water&lt;/<span class="t">button</span>&gt;
+    &lt;/<span class="t">article</span>&gt;
+  );
+}</pre>
+    </div>
+    <p class="hint">Drag a dial, or click a highlighted number in the code and type. In the app this is your real file, and the tile is your real component.</p>
+  </section>
+
+  <section class="wrap" aria-labelledby="use">
+    <div class="head">
+      <h2 id="use">Open a tile and it's yours.</h2>
+      <p>Each tile plays its component in a loop, with a cursor pressing the real buttons. Click one and the loop stops where it stands. Hover it, type in it, tune it.</p>
+    </div>
+    <div class="pair">
+      <figure>
+        <img class="shot" src="shots/open.webp" width="1920" height="1227" loading="lazy" alt="An open tile showing a sun stepper set to 6 hours, with a dark panel of dials beside it for width, radius, padding, height and text size.">
+        <figcaption><b>Dials come from your code.</b> Moodboard reads the component's classes, styles and stylesheets, and gives every literal a dial. The line under the panel names the file the dials edit.</figcaption>
+      </figure>
+      <figure>
+        <img class="shot" src="shots/welcome.webp" width="1100" height="816" loading="lazy" alt="The welcome sheet with three steps: Node found, try the Greenhouse demo or connect a project, and Claude Code added.">
+        <figcaption><b>Ready in a minute.</b> The first launch checks for Node, offers a small demo project to play with, and can add Moodboard to Claude Code.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="wrap" aria-labelledby="with">
+    <div class="head">
+      <h2 id="with">Works with what you already use.</h2>
+    </div>
+    <div class="links">
+      <div>
+        <h3>Next.js</h3>
+        <p>Point it at a project folder. Client components run in isolation, inside your layout's providers, with your Tailwind and fonts. Save a file and its tile redraws in about 200 ms.</p>
+      </div>
+      <div>
+        <h3>Paper</h3>
+        <p>Import frames from the Paper design app. Tune them on the wall before they're code, and see when the design changes.</p>
+      </div>
+      <div>
+        <h3>Claude Code</h3>
+        <p>Claude Code can see the wall, open components and set dials. Write a note on a tuned component and send it to be built into your project.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap" id="install" aria-labelledby="install-title">
+    <div class="head">
+      <h2 id="install-title">Install</h2>
+      <p>Moodboard needs macOS 26 or later. To connect projects, it also needs <a href="https://nodejs.org">Node</a> 20.19 or newer.</p>
+    </div>
+    <div class="ways">
+      <div class="way">
+        <h3>One command</h3>
+        <p>Downloads the latest release into ~/Applications and opens it. For Apple silicon.</p>
+        <div class="cmd"><code id="curl">curl -fsSL https://raw.githubusercontent.com/shariqmalik10/moodboard/main/scripts/install.sh | sh</code><button class="copy" type="button" data-copy="curl">Copy</button></div>
+      </div>
+      <div class="way">
+        <h3>Download the app</h3>
+        <p><a href="https://github.com/shariqmalik10/moodboard/releases/latest/download/Moodboard.zip">Moodboard.zip</a> from the latest release. The app isn't notarized, so the first time you open it, macOS stops it. Open System Settings, then Privacy &amp; Security, and click Open Anyway.</p>
+      </div>
+      <div class="way">
+        <h3>Build from source</h3>
+        <p>Needs Xcode and Node. Works on Intel Macs too.</p>
+        <div class="cmd"><code id="source">git clone https://github.com/shariqmalik10/moodboard.git &amp;&amp; cd moodboard &amp;&amp; scripts/build.sh</code><button class="copy" type="button" data-copy="source">Copy</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <span>Moodboard is MIT licensed.</span>
+  <span><a href="https://github.com/shariqmalik10/moodboard">github.com/shariqmalik10/moodboard</a></span>
+</footer>
+
+<script>
+(() => {
+  const plant = document.getElementById("plant");
+  const dials = [...document.querySelectorAll(".dial input")];
+  const literals = [...document.querySelectorAll(".lit")];
+  const vars = { radius: "--radius", pad: "--pad", title: "--title", button: "--button" };
+  let touched = false;
+
+  function set(key, value, from) {
+    const dial = dials.find((each) => each.dataset.key === key);
+    const v = Math.round(Math.min(+dial.max, Math.max(+dial.min, value)));
+    plant.style.setProperty(vars[key], v + "px");
+    dial.value = v;
+    dial.parentElement.querySelector("output").textContent = v;
+    dial.parentElement.style.setProperty("--p", ((v - dial.min) / (dial.max - dial.min)) * 100 + "%");
+    for (const lit of literals) {
+      if (lit.dataset.key !== key) continue;
+      lit.style.setProperty("--w", String(v).length);
+      if (lit === from) continue;
+      lit.value = v;
+      lit.classList.add("flash");
+      requestAnimationFrame(() => requestAnimationFrame(() => lit.classList.remove("flash")));
+    }
+  }
+
+  for (const dial of dials) {
+    set(dial.dataset.key, +dial.value);
+    dial.addEventListener("input", () => { touched = true; set(dial.dataset.key, +dial.value, dial); });
+  }
+  for (const lit of literals) {
+    lit.addEventListener("input", () => {
+      touched = true;
+      const n = parseInt(lit.value, 10);
+      lit.style.setProperty("--w", Math.max(1, lit.value.length));
+      if (!Number.isNaN(n)) set(lit.dataset.key, n, lit);
+    });
+    lit.addEventListener("blur", () => set(lit.dataset.key, parseInt(lit.value, 10) || +dials.find((d) => d.dataset.key === lit.dataset.key).value));
+    lit.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+      event.preventDefault();
+      touched = true;
+      set(lit.dataset.key, (parseInt(lit.value, 10) || 0) + (event.key === "ArrowUp" ? 1 : -1) * (event.shiftKey ? 10 : 1));
+    });
+  }
+
+  const water = document.getElementById("water");
+  water.addEventListener("click", () => {
+    const done = water.toggleAttribute("data-done");
+    water.textContent = done ? "Watered" : "Water";
+    document.getElementById("status").textContent = done ? "Watered just now" : "Thirsty today";
+    plant.querySelector(".thirst i").style.width = done ? "4%" : "86%";
+  });
+
+  // Plays the radius dial once when the miniature first comes into view, the way a tile plays its loop.
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!still && "IntersectionObserver" in window) {
+    const seen = new IntersectionObserver((entries) => {
+      if (!entries.some((each) => each.isIntersecting)) return;
+      seen.disconnect();
+      const start = performance.now();
+      const keys = [[0, 18], [700, 34], [1500, 6], [2300, 18]];
+      const frame = (now) => {
+        if (touched) return;
+        const t = now - start;
+        const i = keys.findIndex(([at]) => at > t);
+        if (i === -1) return set("radius", 18);
+        const [a, from] = keys[i - 1], [b, to] = keys[i];
+        const p = (t - a) / (b - a);
+        set("radius", from + (to - from) * (0.5 - Math.cos(Math.PI * p) / 2));
+        requestAnimationFrame(frame);
+      };
+      setTimeout(() => requestAnimationFrame(frame), 500);
+    }, { threshold: 0.6 });
+    seen.observe(document.querySelector(".mini"));
+  }
+
+  for (const button of document.querySelectorAll(".copy")) {
+    button.addEventListener("click", async () => {
+      const text = document.getElementById(button.dataset.copy).textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        button.textContent = "Copied";
+      } catch {
+        getSelection().selectAllChildren(document.getElementById(button.dataset.copy));
+        button.textContent = "Selected";
+      }
+      setTimeout(() => (button.textContent = "Copy"), 1600);
+    });
+  }
+})();
+</script>
+</body>
+</html>

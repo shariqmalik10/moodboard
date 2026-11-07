@@ -1,0 +1,663 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		00326C779AB3875899ED7C1B /* ListController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B87D4DD2217451C14C53CC /* ListController.swift */; };
+		0C7532A37B0F41F7B90E0CCA /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4F0B3C4DF8677349CE7A0CC /* InspectorView.swift */; };
+		0E39C55587448ACB6EED3D02 /* ProjectSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64623353DAAA9C8EFD1F7561 /* ProjectSync.swift */; };
+		13B6CB5E23704A46ABDB9679 /* ProjectServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DABF942ACD2135A340F596BD /* ProjectServer.swift */; };
+		1EC7A6387D3491EB86F0B0C7 /* Plates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B6A3BE74A65D527812510A2 /* Plates.swift */; };
+		210E9303466DBD93D9F0FA5D /* ProjectsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CE0926EAB84C9DEBEC5AC64 /* ProjectsPanel.swift */; };
+		36C16DC1D781259E711816E3 /* Motion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 223F67F2B9A7AB1D9FDA856F /* Motion.swift */; };
+		421329C8FE9CE43099375CB0 /* Materials.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5327A1D2D24B5B2CC649355 /* Materials.swift */; };
+		43F1022BFEFC1EF828B93E61 /* Welcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60109589A070C613B611B0DE /* Welcome.swift */; };
+		49281363C749E130ED0D142E /* Importer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC9800B0331045504E847A3 /* Importer.swift */; };
+		4C03D03BFD530ACD5B64FB48 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50CFE2F55D85A55B8DC206C1 /* Models.swift */; };
+		4F4FD1F65CE0F30D37A98D5D /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA66FFE2E3C2B3C9C3B981C9 /* Tools.swift */; };
+		50AD6BE6A37B05668ACC1E9F /* LiveStage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C80CC225508BB62E3C7519EF /* LiveStage.swift */; };
+		59AAF4BB950866A3275EF1F3 /* BoardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C183E2EDBCDD9050AD262DE /* BoardStore.swift */; };
+		5A231E1AB09C47462A90624E /* LayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B243E24A36E8E724D172E7 /* LayoutTests.swift */; };
+		5C95CE78B0B0CD36A5DB0FAE /* TileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA2887049538FE37EDED35E /* TileView.swift */; };
+		5FF2ECF0B1A0A3A1830C9800 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 0A6BCA9F3F53A7C4FC506DB4 /* AppIcon.icns */; };
+		9A36D0A29FEF23606C157F76 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 837D9AA74E9E0E0A7A3411C3 /* AppDelegate.swift */; };
+		9F845EEF93B9BF854FD7CFB0 /* WebHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902A0A6F20FD6D0D0BF86BBC /* WebHost.swift */; };
+		A04504D9DCBF58A372E9B8B6 /* Chrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7BCBE67E2CC4CA3539C3EC /* Chrome.swift */; };
+		A3FB69B18EA965E70D57B6A3 /* PaperWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 065CA96706AE2CCBC1B1C80A /* PaperWatch.swift */; };
+		A71C2C53223C32A61A31C751 /* ViewsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9079BE21C60FEFEEADE46812 /* ViewsTests.swift */; };
+		AA61CA029F3D5F8101FA27D2 /* Status.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FB2F3CA021456A6C8759FC /* Status.swift */; };
+		ACCC4BC1DACB7F3B78E00067 /* SocketServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7A4B80DB364C71176C66B9E /* SocketServer.swift */; };
+		B1A134106268A376B1A47062 /* ProjectCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3CD076DEA2BE3A1169D5575 /* ProjectCatalog.swift */; };
+		B6AF104A1C729BA03C808117 /* MCPBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53872DE40EB1B0D0D5830ED /* MCPBridge.swift */; };
+		C14E807D79474D09DE9C3400 /* PaperPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B66C8E89B4ACEF267CF39F9 /* PaperPanel.swift */; };
+		D1BD1E80898865E69149527D /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF273D49F2E1F542A76D258F /* Views.swift */; };
+		D6A275785473627B27B60044 /* FocusController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A357F220809AD92BE1682EEC /* FocusController.swift */; };
+		D7D2D2F237FDAE5A868EF64E /* Layout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33B2DD6C9DC2F159EDD0C11 /* Layout.swift */; };
+		DB154B2FE41ADB6949F32C12 /* PaperClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDD3C0EF962384A50CFBF712 /* PaperClient.swift */; };
+		ECB24320A0371691F7C37E3A /* MainMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F211601DF9D7EA66BC8700 /* MainMenu.swift */; };
+		F281C216397A80C5A3FBF0AF /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CD0B638F4E098C4A1A58C0 /* main.swift */; };
+		FBC9640594CF91C6F06D36BA /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1130BAFD46D3BC5AC4D1C5D3 /* CanvasView.swift */; };
+		FBE60CCA85B103237204756E /* ComponentLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E1FC1133EE32F3F3B2F7BA8 /* ComponentLibrary.swift */; };
+		FD06A518F555E78473ABCCBA /* Handoffs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CA7EE6357BDE9353E2C9A5F /* Handoffs.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8FB31238277BC4A948C311B4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 02E92C8B148582EB0AF4CBFD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 711A8CCE6D302A1B17292E13;
+			remoteInfo = Moodboard;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		065CA96706AE2CCBC1B1C80A /* PaperWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperWatch.swift; sourceTree = "<group>"; };
+		0A6BCA9F3F53A7C4FC506DB4 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		0B6A3BE74A65D527812510A2 /* Plates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Plates.swift; sourceTree = "<group>"; };
+		0E1FC1133EE32F3F3B2F7BA8 /* ComponentLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentLibrary.swift; sourceTree = "<group>"; };
+		0E7BCBE67E2CC4CA3539C3EC /* Chrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chrome.swift; sourceTree = "<group>"; };
+		1130BAFD46D3BC5AC4D1C5D3 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
+		223F67F2B9A7AB1D9FDA856F /* Motion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Motion.swift; sourceTree = "<group>"; };
+		2C183E2EDBCDD9050AD262DE /* BoardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardStore.swift; sourceTree = "<group>"; };
+		3CA7EE6357BDE9353E2C9A5F /* Handoffs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Handoffs.swift; sourceTree = "<group>"; };
+		4CE0926EAB84C9DEBEC5AC64 /* ProjectsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsPanel.swift; sourceTree = "<group>"; };
+		50CFE2F55D85A55B8DC206C1 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		5B66C8E89B4ACEF267CF39F9 /* PaperPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperPanel.swift; sourceTree = "<group>"; };
+		60109589A070C613B611B0DE /* Welcome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Welcome.swift; sourceTree = "<group>"; };
+		64623353DAAA9C8EFD1F7561 /* ProjectSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSync.swift; sourceTree = "<group>"; };
+		72CD0B638F4E098C4A1A58C0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		837D9AA74E9E0E0A7A3411C3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		8CC9800B0331045504E847A3 /* Importer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Importer.swift; sourceTree = "<group>"; };
+		902A0A6F20FD6D0D0BF86BBC /* WebHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebHost.swift; sourceTree = "<group>"; };
+		9079BE21C60FEFEEADE46812 /* ViewsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsTests.swift; sourceTree = "<group>"; };
+		A2B243E24A36E8E724D172E7 /* LayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutTests.swift; sourceTree = "<group>"; };
+		A357F220809AD92BE1682EEC /* FocusController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusController.swift; sourceTree = "<group>"; };
+		A5327A1D2D24B5B2CC649355 /* Materials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Materials.swift; sourceTree = "<group>"; };
+		A90AE03BA293E8BD54FE5AC5 /* Moodboard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Moodboard.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA66FFE2E3C2B3C9C3B981C9 /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
+		B33B2DD6C9DC2F159EDD0C11 /* Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Layout.swift; sourceTree = "<group>"; };
+		BF273D49F2E1F542A76D258F /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
+		C0FB2F3CA021456A6C8759FC /* Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Status.swift; sourceTree = "<group>"; };
+		C3CD076DEA2BE3A1169D5575 /* ProjectCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectCatalog.swift; sourceTree = "<group>"; };
+		C80CC225508BB62E3C7519EF /* LiveStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveStage.swift; sourceTree = "<group>"; };
+		C8F211601DF9D7EA66BC8700 /* MainMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenu.swift; sourceTree = "<group>"; };
+		CDA2887049538FE37EDED35E /* TileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TileView.swift; sourceTree = "<group>"; };
+		CE700D57804E5652AB0E2BFD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		D53872DE40EB1B0D0D5830ED /* MCPBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPBridge.swift; sourceTree = "<group>"; };
+		DABF942ACD2135A340F596BD /* ProjectServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectServer.swift; sourceTree = "<group>"; };
+		DDD3C0EF962384A50CFBF712 /* PaperClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaperClient.swift; sourceTree = "<group>"; };
+		E7A4B80DB364C71176C66B9E /* SocketServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SocketServer.swift; sourceTree = "<group>"; };
+		E9B87D4DD2217451C14C53CC /* ListController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListController.swift; sourceTree = "<group>"; };
+		F4F0B3C4DF8677349CE7A0CC /* InspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorView.swift; sourceTree = "<group>"; };
+		F9C97830FC78CF9D4642D1B3 /* MoodboardTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoodboardTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		3F629111CB4ACB88CC0AF5E9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A90AE03BA293E8BD54FE5AC5 /* Moodboard.app */,
+				F9C97830FC78CF9D4642D1B3 /* MoodboardTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		517D6CB63E32ED3214DEDCA9 /* Moodboard */ = {
+			isa = PBXGroup;
+			children = (
+				CE700D57804E5652AB0E2BFD /* Info.plist */,
+				D55D4F8606D8E2F0DFF34939 /* App */,
+				B9187EB1EDF15DC11416A56F /* Board */,
+				E61B5ED887E05B20221C00F4 /* Canvas */,
+				692DC36F54FB67DB601B4EF5 /* Focus */,
+				B55864C0D92ABF204537CD4C /* MCP */,
+				DBF9A1BA8CA8F2C274ABAB02 /* Paper */,
+				D70C974B318952780A844485 /* Projects */,
+				86AA825B3ACE4119C7E70A06 /* Resources */,
+				F0ED377A717C37FF6266AD91 /* Web */,
+			);
+			path = Moodboard;
+			sourceTree = "<group>";
+		};
+		692DC36F54FB67DB601B4EF5 /* Focus */ = {
+			isa = PBXGroup;
+			children = (
+				A357F220809AD92BE1682EEC /* FocusController.swift */,
+				F4F0B3C4DF8677349CE7A0CC /* InspectorView.swift */,
+				E9B87D4DD2217451C14C53CC /* ListController.swift */,
+			);
+			path = Focus;
+			sourceTree = "<group>";
+		};
+		7287892977BCBC8B9D37EDA1 /* MoodboardTests */ = {
+			isa = PBXGroup;
+			children = (
+				A2B243E24A36E8E724D172E7 /* LayoutTests.swift */,
+				9079BE21C60FEFEEADE46812 /* ViewsTests.swift */,
+			);
+			path = MoodboardTests;
+			sourceTree = "<group>";
+		};
+		86AA825B3ACE4119C7E70A06 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				0A6BCA9F3F53A7C4FC506DB4 /* AppIcon.icns */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		86CE67FCB2E72A3D268682A8 = {
+			isa = PBXGroup;
+			children = (
+				517D6CB63E32ED3214DEDCA9 /* Moodboard */,
+				7287892977BCBC8B9D37EDA1 /* MoodboardTests */,
+				3F629111CB4ACB88CC0AF5E9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B55864C0D92ABF204537CD4C /* MCP */ = {
+			isa = PBXGroup;
+			children = (
+				3CA7EE6357BDE9353E2C9A5F /* Handoffs.swift */,
+				D53872DE40EB1B0D0D5830ED /* MCPBridge.swift */,
+				E7A4B80DB364C71176C66B9E /* SocketServer.swift */,
+				AA66FFE2E3C2B3C9C3B981C9 /* Tools.swift */,
+			);
+			path = MCP;
+			sourceTree = "<group>";
+		};
+		B9187EB1EDF15DC11416A56F /* Board */ = {
+			isa = PBXGroup;
+			children = (
+				2C183E2EDBCDD9050AD262DE /* BoardStore.swift */,
+				0E1FC1133EE32F3F3B2F7BA8 /* ComponentLibrary.swift */,
+				B33B2DD6C9DC2F159EDD0C11 /* Layout.swift */,
+				A5327A1D2D24B5B2CC649355 /* Materials.swift */,
+				50CFE2F55D85A55B8DC206C1 /* Models.swift */,
+				C0FB2F3CA021456A6C8759FC /* Status.swift */,
+				BF273D49F2E1F542A76D258F /* Views.swift */,
+			);
+			path = Board;
+			sourceTree = "<group>";
+		};
+		D55D4F8606D8E2F0DFF34939 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				837D9AA74E9E0E0A7A3411C3 /* AppDelegate.swift */,
+				0E7BCBE67E2CC4CA3539C3EC /* Chrome.swift */,
+				72CD0B638F4E098C4A1A58C0 /* main.swift */,
+				C8F211601DF9D7EA66BC8700 /* MainMenu.swift */,
+				60109589A070C613B611B0DE /* Welcome.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		D70C974B318952780A844485 /* Projects */ = {
+			isa = PBXGroup;
+			children = (
+				C3CD076DEA2BE3A1169D5575 /* ProjectCatalog.swift */,
+				DABF942ACD2135A340F596BD /* ProjectServer.swift */,
+				4CE0926EAB84C9DEBEC5AC64 /* ProjectsPanel.swift */,
+				64623353DAAA9C8EFD1F7561 /* ProjectSync.swift */,
+			);
+			path = Projects;
+			sourceTree = "<group>";
+		};
+		DBF9A1BA8CA8F2C274ABAB02 /* Paper */ = {
+			isa = PBXGroup;
+			children = (
+				8CC9800B0331045504E847A3 /* Importer.swift */,
+				DDD3C0EF962384A50CFBF712 /* PaperClient.swift */,
+				5B66C8E89B4ACEF267CF39F9 /* PaperPanel.swift */,
+				065CA96706AE2CCBC1B1C80A /* PaperWatch.swift */,
+			);
+			path = Paper;
+			sourceTree = "<group>";
+		};
+		E61B5ED887E05B20221C00F4 /* Canvas */ = {
+			isa = PBXGroup;
+			children = (
+				1130BAFD46D3BC5AC4D1C5D3 /* CanvasView.swift */,
+				C80CC225508BB62E3C7519EF /* LiveStage.swift */,
+				223F67F2B9A7AB1D9FDA856F /* Motion.swift */,
+				0B6A3BE74A65D527812510A2 /* Plates.swift */,
+				CDA2887049538FE37EDED35E /* TileView.swift */,
+			);
+			path = Canvas;
+			sourceTree = "<group>";
+		};
+		F0ED377A717C37FF6266AD91 /* Web */ = {
+			isa = PBXGroup;
+			children = (
+				902A0A6F20FD6D0D0BF86BBC /* WebHost.swift */,
+			);
+			path = Web;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		711A8CCE6D302A1B17292E13 /* Moodboard */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BE0A90F59CEF80C93B89B49E /* Build configuration list for PBXNativeTarget "Moodboard" */;
+			buildPhases = (
+				29903F96EA669706186194AA /* Sources */,
+				0C86E68F4AB57C1D4B149DAB /* Copy the web components */,
+				E48FFE39EF5ADBEC572A78C6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Moodboard;
+			packageProductDependencies = (
+			);
+			productName = Moodboard;
+			productReference = A90AE03BA293E8BD54FE5AC5 /* Moodboard.app */;
+			productType = "com.apple.product-type.application";
+		};
+		7F871D8203A18BD080099A27 /* MoodboardTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4CA4024DD8588AFF660E0ACA /* Build configuration list for PBXNativeTarget "MoodboardTests" */;
+			buildPhases = (
+				F03757ABC50C75A49F441A5B /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9590763BE4DCCE846A39A5C1 /* PBXTargetDependency */,
+			);
+			name = MoodboardTests;
+			packageProductDependencies = (
+			);
+			productName = MoodboardTests;
+			productReference = F9C97830FC78CF9D4642D1B3 /* MoodboardTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		02E92C8B148582EB0AF4CBFD /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					711A8CCE6D302A1B17292E13 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+					7F871D8203A18BD080099A27 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 48794BC4322975B774829391 /* Build configuration list for PBXProject "Moodboard" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 86CE67FCB2E72A3D268682A8;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 3F629111CB4ACB88CC0AF5E9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				711A8CCE6D302A1B17292E13 /* Moodboard */,
+				7F871D8203A18BD080099A27 /* MoodboardTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E48FFE39EF5ADBEC572A78C6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5FF2ECF0B1A0A3A1830C9800 /* AppIcon.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0C86E68F4AB57C1D4B149DAB /* Copy the web components */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy the web components";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nWEB=\"$SRCROOT/../dist\"\nif [ ! -f \"$WEB/stage.html\" ]; then\n  echo \"error: $WEB is missing. Run npm run build in the project root first.\"\n  exit 1\nfi\nrsync -a --delete --exclude index.html \"$WEB/\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/web/\"\nSYNC=\"$SRCROOT/../dist-sync\"\nif [ ! -f \"$SYNC/server.mjs\" ]; then\n  echo \"error: $SYNC is missing. Run npm run build in the project root first.\"\n  exit 1\nfi\nrsync -a --delete \"$SYNC/\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/sync/\"\nDEMO=\"$SRCROOT/../dist-demo\"\nif [ ! -f \"$DEMO/package.json\" ]; then\n  echo \"error: $DEMO is missing. Run npm run build in the project root first.\"\n  exit 1\nfi\nrsync -a --delete \"$DEMO/\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/demo/\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		29903F96EA669706186194AA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9A36D0A29FEF23606C157F76 /* AppDelegate.swift in Sources */,
+				59AAF4BB950866A3275EF1F3 /* BoardStore.swift in Sources */,
+				FBC9640594CF91C6F06D36BA /* CanvasView.swift in Sources */,
+				A04504D9DCBF58A372E9B8B6 /* Chrome.swift in Sources */,
+				FBE60CCA85B103237204756E /* ComponentLibrary.swift in Sources */,
+				D6A275785473627B27B60044 /* FocusController.swift in Sources */,
+				FD06A518F555E78473ABCCBA /* Handoffs.swift in Sources */,
+				49281363C749E130ED0D142E /* Importer.swift in Sources */,
+				0C7532A37B0F41F7B90E0CCA /* InspectorView.swift in Sources */,
+				D7D2D2F237FDAE5A868EF64E /* Layout.swift in Sources */,
+				00326C779AB3875899ED7C1B /* ListController.swift in Sources */,
+				50AD6BE6A37B05668ACC1E9F /* LiveStage.swift in Sources */,
+				B6AF104A1C729BA03C808117 /* MCPBridge.swift in Sources */,
+				ECB24320A0371691F7C37E3A /* MainMenu.swift in Sources */,
+				421329C8FE9CE43099375CB0 /* Materials.swift in Sources */,
+				4C03D03BFD530ACD5B64FB48 /* Models.swift in Sources */,
+				36C16DC1D781259E711816E3 /* Motion.swift in Sources */,
+				DB154B2FE41ADB6949F32C12 /* PaperClient.swift in Sources */,
+				C14E807D79474D09DE9C3400 /* PaperPanel.swift in Sources */,
+				A3FB69B18EA965E70D57B6A3 /* PaperWatch.swift in Sources */,
+				1EC7A6387D3491EB86F0B0C7 /* Plates.swift in Sources */,
+				B1A134106268A376B1A47062 /* ProjectCatalog.swift in Sources */,
+				13B6CB5E23704A46ABDB9679 /* ProjectServer.swift in Sources */,
+				0E39C55587448ACB6EED3D02 /* ProjectSync.swift in Sources */,
+				210E9303466DBD93D9F0FA5D /* ProjectsPanel.swift in Sources */,
+				ACCC4BC1DACB7F3B78E00067 /* SocketServer.swift in Sources */,
+				AA61CA029F3D5F8101FA27D2 /* Status.swift in Sources */,
+				5C95CE78B0B0CD36A5DB0FAE /* TileView.swift in Sources */,
+				4F4FD1F65CE0F30D37A98D5D /* Tools.swift in Sources */,
+				D1BD1E80898865E69149527D /* Views.swift in Sources */,
+				9F845EEF93B9BF854FD7CFB0 /* WebHost.swift in Sources */,
+				43F1022BFEFC1EF828B93E61 /* Welcome.swift in Sources */,
+				F281C216397A80C5A3FBF0AF /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F03757ABC50C75A49F441A5B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5A231E1AB09C47462A90624E /* LayoutTests.swift in Sources */,
+				A71C2C53223C32A61A31C751 /* ViewsTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9590763BE4DCCE846A39A5C1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 711A8CCE6D302A1B17292E13 /* Moodboard */;
+			targetProxy = 8FB31238277BC4A948C311B4 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2B712474E5E46A684AFB2315 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.shariqmalik10.MoodboardTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Moodboard.app/Contents/MacOS/Moodboard";
+			};
+			name = Release;
+		};
+		554974F6F323A3A8C7D105F2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Moodboard/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Moodboard;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.shariqmalik10.moodboard;
+				PRODUCT_NAME = Moodboard;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		5E1F3D7F36C88924D436AC30 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		9D3F351C9511B455860893E1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Moodboard/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Moodboard;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.shariqmalik10.moodboard;
+				PRODUCT_NAME = Moodboard;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		A92E3CA41B3466EBE4778616 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		CE4190D22C8ABEC792CBC081 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.shariqmalik10.MoodboardTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Moodboard.app/Contents/MacOS/Moodboard";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		48794BC4322975B774829391 /* Build configuration list for PBXProject "Moodboard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A92E3CA41B3466EBE4778616 /* Debug */,
+				5E1F3D7F36C88924D436AC30 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4CA4024DD8588AFF660E0ACA /* Build configuration list for PBXNativeTarget "MoodboardTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CE4190D22C8ABEC792CBC081 /* Debug */,
+				2B712474E5E46A684AFB2315 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BE0A90F59CEF80C93B89B49E /* Build configuration list for PBXNativeTarget "Moodboard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				554974F6F323A3A8C7D105F2 /* Debug */,
+				9D3F351C9511B455860893E1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 02E92C8B148582EB0AF4CBFD /* Project object */;
+}

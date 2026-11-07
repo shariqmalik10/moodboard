@@ -1,0 +1,89 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+html:not([data-project]),
+html:not([data-project]) body {
+  background: var(--stage-ground);
+}
+
+/* A component from a project sits centred on the project's own ground, at the width it wants. */
+html[data-project] #stage {
+  display: flex;
+  align-items: safe center;
+  justify-content: safe center;
+  box-sizing: border-box;
+  padding: 24px;
+  overflow: auto;
+}
+
+html[data-measuring] body,
+html[data-measuring] {
+  height: auto;
+}
+
+html[data-measuring] #stage {
+  height: auto;
+  display: block;
+  width: 712px;
+}
+
+html[data-measuring] #stage > * {
+  max-width: 100%;
+}
+
+#stage {
+  height: 100%;
+  transition: opacity 160ms ease;
+}
+
+.stage-cursor {
+  position: fixed;
+  inset: 0 auto auto 0;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: visible;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.stage-cursor img {
+  display: block;
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 28%));
+}
+
+/* The fingertip the iOS simulator draws: a soft dot that sinks on the press. */
+.stage-cursor-touch {
+  width: 0;
+  height: 0;
+}
+
+.stage-cursor-touch::before {
+  content: "";
+  position: absolute;
+  left: -22px;
+  top: -22px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgb(33 31 26 / 22%);
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 75%), 0 2px 8px rgb(0 0 0 / 18%);
+  transition: transform 110ms ease-out;
+}
+
+.stage-cursor-touch[data-pressed]::before {
+  transform: scale(0.78);
+}
+
+html[data-still] .paper-root * {
+  animation: none !important;
+}

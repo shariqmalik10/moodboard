@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>Moodboard reads the Next.js projects you connect, so their components can run on your wall, and writes your dial changes back to their source.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Moodboard reads the Next.js projects you connect, so their components can run on your wall, and writes your dial changes back to their source.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>Moodboard reads the Next.js projects you connect, so their components can run on your wall, and writes your dial changes back to their source.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>
