@@ -437,7 +437,7 @@
 				ENABLE_APP_SANDBOX = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Moodboard/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Moodboard;
+				INFOPLIST_KEY_CFBundleDisplayName = "Moodboard Debug";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
@@ -445,7 +445,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = io.github.shariqmalik10.moodboard;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.shariqmalik10.moodboard.debug;
 				PRODUCT_NAME = Moodboard;
 				SDKROOT = macosx;
 			};

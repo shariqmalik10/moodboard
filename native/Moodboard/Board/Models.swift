@@ -117,8 +117,15 @@ extension NSColor {
 }
 
 enum Paths {
+  // A Debug build keeps its own wall, so running one never touches the data of the app you use.
+  #if DEBUG
+    private static let folderName = "Moodboard Debug"
+  #else
+    private static let folderName = "Moodboard"
+  #endif
+
   static let support: URL = folder(
-    FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appending(path: "Moodboard", directoryHint: .isDirectory)
+    FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appending(path: folderName, directoryHint: .isDirectory)
   )
   static let socket = support.appending(path: "mcp.sock")
   static let board = support.appending(path: "board.json")

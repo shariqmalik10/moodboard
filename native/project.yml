@@ -35,6 +35,10 @@ targets:
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         INFOPLIST_KEY_NSPrincipalClass: NSApplication
         ENABLE_APP_SANDBOX: NO
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: io.github.shariqmalik10.moodboard.debug
+          INFOPLIST_KEY_CFBundleDisplayName: Moodboard Debug
     postCompileScripts:
       - name: Copy the web components
         basedOnDependencyAnalysis: false

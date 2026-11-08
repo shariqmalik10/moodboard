@@ -141,6 +141,12 @@ final class WebHost {
     let web = StageWebView(frame: frame, configuration: makeConfiguration())
     web.allowsMagnification = false
     web.allowsBackForwardNavigationGestures = false
+    #if DEBUG
+      // A take parks the window off screen, and WebKit stops drawing a page whose window it thinks is covered.
+      if UserDefaults.standard.bool(forKey: "MoodboardRecording"), web.responds(to: NSSelectorFromString("_setWindowOcclusionDetectionEnabled:")) {
+        web.setValue(false, forKey: "windowOcclusionDetectionEnabled")
+      }
+    #endif
     return web
   }
 }

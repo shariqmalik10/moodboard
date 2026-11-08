@@ -2,7 +2,7 @@
 
 A Mac app that puts your React components on an endless wall, running live. Each tile plays its component in a loop. Open one to use it, tune it with dials, and the dials rewrite the literals in your source. Edit the source and the tile changes.
 
-![The wall, showing the Greenhouse demo](docs/shots/wall.webp)
+[![The wall, running the Greenhouse demo. Click to watch the demo film on the website.](docs/media/poster.jpg)](https://shariqmalik10.github.io/moodboard/)
 
 Moodboard runs on your Mac only. It has no account and sends nothing anywhere. It connects to three things you may already have:
 
@@ -212,11 +212,16 @@ To remove Moodboard, delete the app and that folder, and run `claude mcp remove 
 | `src/stage/` | The page that runs one component and plays its loop. |
 | `src/demos/` | Hand-written components bundled into the app. The public build has none. |
 | `demo/` | Greenhouse, the demo project. `tools/build-demo.mjs` copies it and the packages it needs into `dist-demo/`, and the app bundles that. |
-| `docs/` | The website, served by GitHub Pages. |
+| `docs/` | The website, served by GitHub Pages. The demo film is in `docs/media/`. |
+| `tools/video/` | The recorder, the editor, and the script that records the demo film. |
 
 After you change anything under `src/`, `sync/`, or `demo/`, run `npm run build` and build the app again. After you add a Swift file, run `xcodegen generate --spec native/project.yml`.
 
-A Debug build also answers `debug.*` calls on the socket, which is how the scroll numbers were measured. A Release build refuses them.
+A Debug build keeps its data in `~/Library/Application Support/Moodboard Debug`, so it never touches the installed app's data. It also answers `debug.*` calls on the socket, which is how the scroll numbers were measured and how the demo film is recorded. A Release build refuses them.
+
+### Record the demo film
+
+`tools/video/make.sh` records the Greenhouse demo with a Debug build and writes the film the website plays to `docs/media/`. `tools/video/make.sh --recut` cuts the last take again after you change the edit. [`tools/video/README.md`](tools/video/README.md) explains both, and how to record another app with the same tools.
 
 ### Check your work
 

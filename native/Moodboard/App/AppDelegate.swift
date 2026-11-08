@@ -29,7 +29,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     window.contentView = root
     NSApp.mainMenu = MainMenu.build()
     window.makeKeyAndOrderFront(nil)
-    NSApp.activate()
+    #if DEBUG
+      // tools/video launches a Debug build in the background for a take, and it mustn't take over the screen.
+      if !UserDefaults.standard.bool(forKey: "MoodboardRecording") { NSApp.activate() }
+    #else
+      NSApp.activate()
+    #endif
 
     let model = AppModel(host: host, root: root, window: window)
     self.model = model

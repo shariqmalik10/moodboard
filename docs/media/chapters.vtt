@@ -1,0 +1,25 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:03.957
+Try the demo, or connect a Next.js project.
+
+2
+00:00:03.957 --> 00:00:10.268
+Every component runs live, in a loop.
+
+3
+00:00:10.268 --> 00:00:17.011
+Open a tile and it's yours to play with.
+
+4
+00:00:17.011 --> 00:00:21.894
+Move a dial and it rewrites your source.
+
+5
+00:00:21.894 --> 00:00:27.404
+Edit the file and the tile redraws.
+
+6
+00:00:27.404 --> 00:00:36.234
+See it all as a wall, a grid or a list.

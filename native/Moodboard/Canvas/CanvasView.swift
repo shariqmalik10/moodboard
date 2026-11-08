@@ -728,8 +728,11 @@ final class CanvasView: NSView {
 
   func debugState() -> JSON {
     var tiles: [JSON] = []
+    let height = window?.frame.height ?? 0
     for (key, tile) in mounted {
+      let rect = tile.convert(tile.bounds, to: nil)
       tiles.append([
+        "frame": ["x": rect.minX, "y": height - rect.maxY, "w": rect.width, "h": rect.height] as JSON,
         "id": key.id, "p": tile.coverage.p, "stage": tile.stage != nil,
         "ready": tile.stage?.phase == .ready, "phase": tile.stage.map { String(describing: $0.phase) } ?? "", "plateFailure": tile.item.flatMap { plates.failure(for: $0.id) } ?? "", "running": tile.stage?.isRunning ?? false, "plate": tile.plate != nil,
         "pieces": tile.plate?.pieces.count ?? 0,

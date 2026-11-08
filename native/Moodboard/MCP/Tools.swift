@@ -3,6 +3,9 @@ import AppKit
 /// What Claude Code can ask of the running wall. Each method here is one MCP tool, named in `MCPBridge`.
 final class Tools {
   private unowned let model: AppModel
+  #if DEBUG
+    private var recording: (activity: NSObjectProtocol, frame: NSRect, behavior: NSWindow.CollectionBehavior)?
+  #endif
 
   init(model: AppModel) {
     self.model = model
@@ -281,7 +284,13 @@ final class Tools {
         guard let down = mouse(.leftMouseDown), let up = mouse(.leftMouseUp) else { return false }
         // A text field tracks the mouse until it goes up, so the up has to be waiting already.
         NSApp.postEvent(up, atStart: false)
-        window.sendEvent(down)
+        if window === model.window, let view = window.contentView?.hitTest(point) {
+          // While the app isn't active, the main window keeps a first click for itself, so its views get the events directly.
+          view.mouseDown(with: down)
+          if let waiting = NSApp.nextEvent(matching: .leftMouseUp, until: .now, inMode: .default, dequeue: true) { view.mouseUp(with: waiting) }
+        } else {
+          window.sendEvent(down)
+        }
         try await Task.sleep(for: .milliseconds(60))
         return ["w": window.frame.width, "h": window.frame.height] as JSON
       case "debug.drag":
@@ -289,13 +298,17 @@ final class Tools {
         let from = NSPoint(x: params["x"] as? Double ?? 0, y: window.frame.height - (params["y"] as? Double ?? 0))
         let across = params["dx"] as? Double ?? 0
         let steps = params["steps"] as? Int ?? 12
+        let eases = params["ease"] as? Bool ?? false
+        guard let view = window.contentView?.hitTest(from) else { return false }
         func mouse(_ type: NSEvent.EventType, _ point: NSPoint) -> NSEvent? { NSEvent.mouseEvent(with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1) }
-        if let down = mouse(.leftMouseDown, from) { window.sendEvent(down) }
+        if let down = mouse(.leftMouseDown, from) { view.mouseDown(with: down) }
         for step in 1...steps {
           try await Task.sleep(for: .milliseconds(16))
-          if let drag = mouse(.leftMouseDragged, NSPoint(x: from.x + across * Double(step) / Double(steps), y: from.y)) { window.sendEvent(drag) }
+          let progress = Double(step) / Double(steps)
+          let along = eases ? 0.5 - cos(.pi * progress) / 2 : progress
+          if let drag = mouse(.leftMouseDragged, NSPoint(x: from.x + across * along, y: from.y)) { view.mouseDragged(with: drag) }
         }
-        if let up = mouse(.leftMouseUp, NSPoint(x: from.x + across, y: from.y)) { window.sendEvent(up) }
+        if let up = mouse(.leftMouseUp, NSPoint(x: from.x + across, y: from.y)) { view.mouseUp(with: up) }
         return true
       case "debug.view":
         let filter = (params["project"] as? String).map { $0 == "all" ? ProjectFilter.all : .project($0) }
@@ -348,6 +361,7 @@ final class Tools {
         case "copyChanges": state?.onCopyChanges()
         case "toggleBuilt": state?.onToggleBuilt()
         case "dismissLost": state?.onDismissLost()
+        case "startOver": state?.onStartOver()
         default: throw ToolError("Which action?")
         }
         return true
@@ -399,6 +413,35 @@ final class Tools {
         model.canvas?.stats.start()
         model.canvas?.playScroll(dy: params["dy"] as? Double ?? -8, dx: params["dx"] as? Double ?? 0, frames: params["frames"] as? Int ?? 240)
         return true
+      case "debug.rects":
+        let height = model.window.frame.height
+        func rect(_ view: NSView?) -> Any {
+          guard let view, view.window === model.window else { return NSNull() }
+          let frame = view.convert(view.bounds, to: nil)
+          return ["x": frame.minX, "y": height - frame.maxY, "w": frame.width, "h": frame.height] as JSON
+        }
+        return ["window": ["w": model.window.frame.width, "h": height] as JSON, "stage": rect(model.focus?.tile?.stage?.web), "panel": rect(model.focus?.inspector.panelWeb), "list": rect(model.list?.stageWeb)] as JSON
+      case "debug.recording":
+        // A take parks the window past the edge of the screen, where only scripted events reach it. One point of it
+        // stays on the display, because a view's display link stops for a window that's on no display.
+        let on = params["on"] as? Bool ?? true
+        let window = model.window
+        window.ignoresMouseEvents = on
+        // While the window is captured, macOS draws a sharing badge over the window buttons, and hiding them hides it.
+        for kind in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton] { window.standardWindowButton(kind)?.isHidden = on }
+        if on, recording == nil, let edge = NSScreen.screens.max(by: { $0.frame.maxX < $1.frame.maxX }) {
+          recording = (ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .latencyCritical], reason: "Recording a take"), window.frame, window.collectionBehavior)
+          // Mission Control or a change of Space would take the window off the display halfway through.
+          window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
+          window.orderBack(nil)
+          window.setFrameOrigin(NSPoint(x: edge.frame.maxX - 1, y: edge.frame.minY))
+        } else if !on, let take = recording {
+          ProcessInfo.processInfo.endActivity(take.activity)
+          window.collectionBehavior = take.behavior
+          window.setFrameOrigin(take.frame.origin)
+          recording = nil
+        }
+        return ["occluded": !window.occlusionState.contains(.visible), "onDisplay": window.screen != nil, "x": window.frame.minX] as JSON
       case "debug.frames":
         guard var stats = model.canvas?.stats else { return [:] as JSON }
         stats.isRecording = false
