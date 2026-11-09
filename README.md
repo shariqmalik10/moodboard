@@ -2,7 +2,7 @@
 
 A Mac app that puts your React components on an endless wall, running live. Each tile plays its component in a loop. Open one to use it, tune it with dials, and the dials rewrite the literals in your source. Edit the source and the tile changes.
 
-[![The wall, running the Greenhouse demo. Click to watch the demo film on the website.](docs/media/poster.jpg)](https://shariqmalik10.github.io/moodboard/)
+[![The wall, running the Greenhouse demo. Click to watch the demo film on the website.](docs/media/poster.jpg)](https://moodboard.shariqmalik.dev/)
 
 Moodboard runs on your Mac only. It has no account and sends nothing anywhere. It connects to three things you may already have:
 
@@ -10,7 +10,7 @@ Moodboard runs on your Mac only. It has no account and sends nothing anywhere. I
 - **Paper.** Import frames from the Paper design app and tune them before they become code.
 - **Claude Code.** Claude Code can see the wall, open components, and set dials. **Send** hands a tuned component to Claude Code to build into your project.
 
-Website: <https://shariqmalik10.github.io/moodboard/>
+Website: <https://moodboard.shariqmalik.dev/>
 
 ## Install it
 
