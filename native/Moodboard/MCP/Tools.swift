@@ -165,11 +165,39 @@ final class Tools {
     return place(of: id)
   }
 
+  /// Connects, then waits for the first tiles, so one call can say how it went and what to do next.
   private func connectProject(_ params: JSON) async throws -> JSON {
     guard let path = params["path"] as? String, !path.isEmpty else { throw ToolError("Pass path, the project's folder.") }
-    let project = try await model.projects.connect(URL(filePath: NSString(string: path).expandingTildeInPath, directoryHint: .isDirectory))
-    return ["name": project.name, "project": project.slug, "root": project.root, "next": "Its components join the wall over the next minute. list_projects says how it's going."]
+    let connection: ProjectSync.Connection
+    do {
+      connection = try await model.projects.connect(URL(filePath: NSString(string: path).expandingTildeInPath, directoryHint: .isDirectory))
+    } catch let several as ProjectSync.SeveralApps {
+      throw ToolError("\(several.localizedDescription) Ask the person which one, then pass its folder as path: \(several.apps.map(\.path).joined(separator: ", ")).")
+    }
+    let slug = connection.project.slug
+    for _ in 0..<Self.connectPatience where !model.projects.isSettled(slug) { try await Task.sleep(for: .milliseconds(250)) }
+    let settled = model.projects.isSettled(slug)
+    guard let line = model.projects.state.lines.first(where: { $0.slug == slug }) else { throw ToolError("The project was disconnected while it started.") }
+    var result: JSON = ["name": line.name, "project": slug, "root": line.root, "alreadyConnected": !connection.isNew, "onWall": line.shown]
+    if let note = connection.note { result["note"] = note }
+    if !line.skipped.isEmpty { result["notShown"] = line.skipped.map { ["title": $0.title, "file": $0.file, "reason": $0.reason] } }
+    if let problem = line.problem {
+      result["problem"] = problem
+      result["next"] = "It's connected but not running. Fix the problem, then call connect_project again to retry."
+    } else if !settled {
+      result["next"] = "\(model.projects.waitingReason(slug) ?? "It's still starting.") Call list_projects in a moment to see how it's going."
+    } else if line.shown == 0, line.skipped.isEmpty {
+      result["next"] = "Moodboard found no components in it. It shows .tsx files that export a React component, and leaves out pages, layouts, tests, stories and server-only files."
+    } else if line.shown == 0 {
+      result["next"] = "None of its components could stand alone on the wall. notShown says why for each."
+    } else {
+      result["next"] = "\(line.shown) \(line.shown == 1 ? "component is" : "components are") on the wall in the Moodboard window. Saved edits show there at once."
+    }
+    return result
   }
+
+  /// How many quarter seconds connect_project waits for a project to start and be measured.
+  private static let connectPatience = 180
 
   private func listProjects() -> [JSON] {
     model.projects.state.lines.map { line in

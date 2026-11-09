@@ -113,6 +113,11 @@ final class LivePool {
 
   /// Enough for every tile that can be fully in view on a large display at normal zoom.
   static let budget = 12
+  /// Stages nobody holds stay loaded for a moment, so a tile scrolled straight back to runs at once.
+  /// Past that, each one is a whole web process kept for nothing, as in Grid and List where one runs at a time.
+  static let spare = 2
+  static let spareFor: Duration = .seconds(5)
+  private var trim: Task<Void, Never>?
 
   init(host: WebHost, backstage: NSView) {
     self.host = host
@@ -159,5 +164,23 @@ final class LivePool {
     stage.lastUsed = clock
     stage.web.isInteractive = false
     backstage.addSubview(stage.web)
+    trim?.cancel()
+    trim = Task { [weak self] in
+      try? await Task.sleep(for: Self.spareFor)
+      guard !Task.isCancelled else { return }
+      self?.closeSpares()
+    }
+  }
+
+  /// Closes the idle stages past the few most recently used. Closing the web view ends its process.
+  func closeSpares() {
+    let idle = stages.filter { $0.holder == nil }.sorted { $0.lastUsed > $1.lastUsed }
+    idle.dropFirst(Self.spare).forEach(close)
+  }
+
+  private func close(_ stage: LiveStage) {
+    stage.web.stopLoading()
+    stage.web.removeFromSuperview()
+    stages.removeAll { $0 === stage }
   }
 }

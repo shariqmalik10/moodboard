@@ -93,11 +93,10 @@ final class WelcomeController {
   private func check() async {
     state.node = .checking
     state.claude = .checking
-    let node = await Shell.run("node --version")
-    if node.status == 0, let version = node.output.split(separator: "\n").last.map(String.init) {
-      state.node = Self.isRecent(version) ? .ready(version) : .tooOld(version)
-    } else {
-      state.node = .missing
+    switch await NodeCheck.check() {
+    case .ready(let version): state.node = .ready(version)
+    case .tooOld(let version): state.node = .tooOld(version)
+    case .missing: state.node = .missing
     }
     let claude = await Shell.run("command -v claude")
     if claude.status != 0 {
@@ -105,13 +104,6 @@ final class WelcomeController {
     } else {
       state.claude = await Shell.run("claude mcp get moodboard").status == 0 ? .added : .notAdded
     }
-  }
-
-  /// Vite, which runs each project, needs Node 20.19 or newer.
-  nonisolated static func isRecent(_ version: String) -> Bool {
-    let parts = version.trimmingCharacters(in: CharacterSet(charactersIn: "v")).split(separator: ".").compactMap { Int($0) }
-    guard parts.count >= 2 else { return false }
-    return parts[0] > 20 || (parts[0] == 20 && parts[1] >= 19)
   }
 
   /// Copies the Greenhouse demo to the person's home folder, where they can edit it, and connects it.

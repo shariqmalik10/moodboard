@@ -128,14 +128,20 @@ An update keeps your tune on every dial whose value the design still has. Paper 
 
 ## Connect a Next.js project
 
-To put a project's components on the wall, choose **File > Connect Next.js Project…** (⇧⌘O), or click the link button in the bar and then **Connect a project…**. Pick the folder that holds its `package.json`. The project needs its packages installed and Node 20.19 or newer on your PATH.
+To put a project's components on the wall, do one of these:
+
+- Drag the project's folder from Finder onto the wall.
+- Choose **File > Connect Next.js Project…** (⇧⌘O), or click the link button in the bar and then **Connect a project…**, and pick the folder.
+- Ask Claude Code. See [Connect from Claude Code](#connect-from-claude-code).
+
+The folder can be the app itself, any folder inside it, or a monorepo. In a monorepo with one Next.js app, the app connects. With several, the app asks which one. The project needs its packages installed, and Node 20.19 or newer on your PATH. If something is missing, the app says what to do, such as which install command to run. Connecting a project again is safe, and restarts one that stopped.
 
 The first time, macOS may ask whether Moodboard can read files in your Documents, Desktop, or Downloads folder. Choose **Allow**. If you choose **Don't Allow**, turn Moodboard on later in System Settings, under **Privacy & Security > Files and Folders**. The app is signed ad hoc, so macOS may ask again after you install a new build.
 
 What happens next:
 
 - The app starts a small Vite server for the project, on this Mac only. It runs each exported client component in isolation, inside every `*Provider` your `layout.tsx` files wrap around the page. Its cache lives under `~/Library/Application Support/Moodboard/vite/`, so nothing is written into the project.
-- Components arrive on the wall over the next minute. A component that throws or draws nothing stays off the wall, and the link popover lists it with the reason under **can't stand alone**.
+- The first tiles arrive within a few seconds. The first time a project connects, Vite prepares its packages, which can take up to half a minute. A component that throws or draws nothing stays off the wall, and the link popover lists it with the reason under **can't stand alone**.
 - Saving a file in your editor redraws its tile, usually in under 200 ms. A new file adds a tile, and a deleted file removes it. While a file has a syntax error, its tile keeps its last good look.
 - The demo loop presses real buttons, so the page refuses every request except reads, and links and forms go nowhere.
 
@@ -154,6 +160,22 @@ Keep these in mind:
 - **Hold to compare** and **Mark as Built** are hidden for project components, because the source is the record. The mark reads **N written** and lists what the dials changed since the app started.
 - To disconnect, open the link popover, click **…** beside the project, and choose **Disconnect**. Its tiles leave the wall. Your files stay as they are.
 
+### Connect from Claude Code
+
+After you add Moodboard to Claude Code (see [Start](#start)), open Claude Code in your project's folder and ask:
+
+```text
+connect this project to moodboard
+```
+
+Claude Code calls `connect_project` with no path, which means the folder it's working in. Moodboard opens behind your other windows if it's closed. The tool waits for the first tiles, then says how many components are on the wall, which ones aren't and why, and what to do about any problem. The `connect` prompt asks for the same thing. In Claude Code, type `/mcp__moodboard__connect`.
+
+If Claude Code says it has no `moodboard` tools, add the server and start Claude Code again:
+
+```bash
+claude mcp add -s user moodboard -- ~/Applications/Moodboard.app/Contents/MacOS/Moodboard --mcp
+```
+
 Server components that are `async`, fonts from `next/font/local`, and unsaved editor changes are not shown as they are in the real app. Google fonts load only while you are online.
 
 ## What Claude Code can call
@@ -170,11 +192,11 @@ The app answers through `Moodboard --mcp`. If the wall is closed, the first tool
 | `set_dials` | Sets dial values on `id`, or on the open component. An unknown dial returns the real names. On a project component it writes the source file, even with the panel closed. |
 | `set_note` | Writes the note on `id`, or on the open component. |
 | `mark_built` | Records that `id` is built from its current tune and design, and clears its note. |
-| `connect_project` | Connects the Next.js project at `path`, as the menu does. |
+| `connect_project` | Connects the Next.js project at `path`, or the folder Claude Code is working in. A relative `path` starts from that folder. It waits for the first tiles and reports how many are on the wall, which aren't and why, and any problem. |
 | `list_projects` | Lists connected projects, how many components are on the wall, which are not shown and why, and any problem. |
 | `disconnect_project` | Disconnects `project` and removes its tiles. The files stay as they are. |
 
-The app also offers four prompts: `design_in_paper`, `implement_component`, `build_tuned`, and `apply_notes`.
+The app also offers five prompts: `connect`, `design_in_paper`, `implement_component`, `build_tuned`, and `apply_notes`.
 
 ## Where your data lives
 
@@ -265,7 +287,7 @@ Set each dial's default to the component's real value. A dial that neither chang
 - The prebuilt app is for Apple silicon and is signed only ad hoc. Build from source on an Intel Mac.
 - Paper must be open to import, update, or notice a change. With Paper closed, no component reads **Paper changed**.
 - Image assets and fonts from Paper load online. A still made offline keeps an empty cover until the tune changes. Delete `plates/` to make them all again.
-- At most 12 tiles run live at once. Past that, for example when you zoom far out, tiles show their stills.
+- At most 12 tiles run live at once. Past that, for example when you zoom far out, tiles show their stills. Each live tile is a web process of about 40 MB, so the Wall uses about 1 GB with a project connected. Grid and List keep only the tile in use and two spares, and use about half that.
 - Animation stops while the window is hidden, minimised, or on another Space, and resumes when you can see it.
 
 ## The earlier browser wall

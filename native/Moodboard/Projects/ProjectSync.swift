@@ -50,6 +50,8 @@ final class ProjectSync {
   private static let patience = Duration.seconds(6)
   /// Filled at connect, so the wall turns to the new project once it has something to show.
   private var revealing = Set<String>()
+  /// Projects whose server has said which components it found, since it started.
+  private var scanned = Set<String>()
 
   private var queue: [Job] = []
   private var measurers: [Measurer] = []
@@ -81,58 +83,131 @@ final class ProjectSync {
     servers = [:]
   }
 
+  /// Opens where the last project was, since the next one is usually beside it.
   func choose() {
     let panel = NSOpenPanel()
     panel.canChooseDirectories = true
     panel.canChooseFiles = false
     panel.prompt = "Connect"
-    panel.message = "Choose a Next.js project. Its components join the wall, and moving a dial edits their source files."
+    panel.message = "Choose a Next.js app, a folder inside one, or a monorepo. Its components join the wall, and moving a dial edits their source files."
+    if let last = ProjectCatalog.projects.last { panel.directoryURL = URL(filePath: last.root, directoryHint: .isDirectory).deletingLastPathComponent() }
     panel.beginSheetModal(for: app.window) { [weak self] response in
       guard response == .OK, let url = panel.url else { return }
-      MainActor.assumeIsolated {
-        Task {
-          do {
-            try await self?.connect(url)
-          } catch {
-            self?.app.chrome?.say(error.localizedDescription)
-          }
+      MainActor.assumeIsolated { self?.connectAsked(url) }
+    }
+  }
+
+  /// Connects a folder the person picked or dropped, and answers in a sheet when it can't.
+  func connectAsked(_ url: URL) {
+    Task {
+      do {
+        let connection = try await connect(url)
+        if !connection.isNew {
+          app.show(.wall, filter: .project(connection.project.slug))
+          app.chrome?.say("\(connection.project.name) is already connected.")
+        } else if let note = connection.note {
+          app.chrome?.say(note)
         }
+      } catch let several as SeveralApps {
+        pickApp(several)
+      } catch {
+        explain(error.localizedDescription)
       }
     }
   }
 
-  /// Checks what can be checked before anything runs, so a bad folder gets a plain answer.
+  private func pickApp(_ several: SeveralApps) {
+    let alert = NSAlert()
+    alert.messageText = "Which app should join the wall?"
+    alert.informativeText = "\(several.folder.lastPathComponent) holds \(several.apps.count) Next.js apps. Connect one now, and the others the same way later."
+    let shown = Array(several.apps.prefix(3))
+    for app in shown { alert.addButton(withTitle: several.label(app)) }
+    alert.addButton(withTitle: "Cancel")
+    alert.beginSheetModal(for: app.window) { [weak self] response in
+      let at = response.rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+      guard at >= 0, at < shown.count else { return }
+      MainActor.assumeIsolated { self?.connectAsked(shown[at]) }
+    }
+  }
+
+  private func explain(_ problem: String) {
+    let alert = NSAlert()
+    alert.messageText = "This folder can't join the wall"
+    alert.informativeText = problem
+    alert.addButton(withTitle: "Choose Another…")
+    alert.addButton(withTitle: "OK")
+    alert.beginSheetModal(for: app.window) { [weak self] response in
+      guard response == .alertFirstButtonReturn else { return }
+      MainActor.assumeIsolated { self?.choose() }
+    }
+  }
+
+  /// Checks a connected folder before its server starts again, so a moved or emptied project gets a plain answer.
   /// The first read of a folder under Documents, Desktop or Downloads waits on macOS's prompt, so this never runs on the main thread.
   nonisolated static func problem(with root: URL) -> String? {
-    let files = FileManager.default
-    let name = root.lastPathComponent
-    do {
-      _ = try files.contentsOfDirectory(atPath: root.path)
-    } catch CocoaError.fileReadNoPermission {
-      return refused
-    } catch {}
-    guard files.fileExists(atPath: root.appending(path: "package.json").path) else { return "\(name) has no package.json, so it isn't a Next.js project." }
-    guard files.fileExists(atPath: root.appending(path: "node_modules").path) else { return "\(name) has no node_modules. Install its packages first, then connect it." }
-    guard files.fileExists(atPath: root.appending(path: "node_modules/react").path) else { return "\(name) doesn't use React, so there's nothing to show from it." }
+    if case .problem(let problem) = ProjectFinder.find(root) { return problem }
     return nil
   }
 
-  nonisolated static let refused = "Moodboard can't read this folder. If macOS asks, choose Allow, or turn Moodboard on in System Settings, under Privacy & Security, Files and Folders."
+  struct Connection {
+    var project: ConnectedProject
+    var isNew: Bool
+    /// Says what was connected when it isn't the folder given, or isn't Next.js.
+    var note: String?
+  }
 
+  /// A folder holding several apps, so the person has to say which.
+  struct SeveralApps: LocalizedError {
+    var folder: URL
+    var apps: [URL]
+
+    func label(_ app: URL) -> String { String(app.path.dropFirst(folder.standardizedFileURL.resolvingSymlinksInPath().path.count)).trimmingCharacters(in: CharacterSet(charactersIn: "/")) }
+    var errorDescription: String? { "\(folder.lastPathComponent) holds several Next.js apps: \(apps.map(label).joined(separator: ", ")). Connect one of them by its folder." }
+  }
+
+  /// Connects the Next.js app at this folder, inside it, or holding it. Connecting one again changes nothing.
   @discardableResult
-  func connect(_ url: URL) async throws -> ConnectedProject {
-    let path = url.standardizedFileURL.path
-    if let problem = await Task.detached(operation: { Self.problem(with: url) }).value { throw ToolError(problem) }
-    if let known = ProjectCatalog.projects.first(where: { $0.root == path }) { return known }
-    let manifest = (try? Data(contentsOf: url.appending(path: "package.json"))).flatMap { try? JSONSerialization.jsonObject(with: $0) as? JSON }
-    let name = manifest?["name"] as? String ?? url.lastPathComponent
+  func connect(_ url: URL) async throws -> Connection {
+    let root: URL
+    let note: String?
+    switch await Task.detached(operation: { ProjectFinder.find(url) }).value {
+    case .problem(let problem): throw ToolError(problem)
+    case .several(let apps): throw SeveralApps(folder: url, apps: apps)
+    case .project(let found, let said): (root, note) = (found, said)
+    }
+    let path = root.path
+    if let known = ProjectCatalog.projects.first(where: { URL(filePath: $0.root).resolvingSymlinksInPath().path == path }) {
+      // Connecting again after fixing what stopped it is how a person retries.
+      if problems[known.slug] != nil {
+        restarts[known.slug] = 0
+        startServer(known)
+        refreshLines()
+      }
+      return Connection(project: known, isNew: false, note: note)
+    }
+    if let problem = NodeCheck.problem(await NodeCheck.check()) { throw ToolError(problem) }
+    let manifest = ProjectFinder.manifest(at: root)
+    let name = manifest?.name ?? root.lastPathComponent
     let wanted = name.lowercased().replacing(/[^a-z0-9]+/, with: "-").trimmingCharacters(in: CharacterSet(charactersIn: "-"))
     let project = ConnectedProject(root: path, name: name, slug: ProjectCatalog.freeSlug(wanted.isEmpty ? "project" : wanted, root: path))
     ProjectCatalog.add(project)
     revealing.insert(project.slug)
     startServer(project)
     refreshLines()
-    return project
+    app.chrome?.say("Starting \(name). Its components join the wall in a few seconds.")
+    return Connection(project: project, isNew: true, note: note)
+  }
+
+  /// Whether a project has started and its components have been measured, or has stopped with a problem.
+  func isSettled(_ slug: String) -> Bool {
+    if problems[slug] != nil { return true }
+    return scanned.contains(slug) && progress[slug] == nil && !queue.contains { $0.slug == slug } && !measurers.contains { $0.job?.slug == slug }
+  }
+
+  /// Said while a project is still on its way, such as macOS waiting on the person to allow its folder.
+  func waitingReason(_ slug: String) -> String? {
+    if slowToStart.contains(slug) { return "macOS may be asking whether Moodboard can read this folder. Ask the person to choose Allow." }
+    return state.lines.first { $0.slug == slug }?.progress
   }
 
   func disconnect(slug: String) {
@@ -147,6 +222,7 @@ final class ProjectSync {
       queue.removeAll { $0.slug == slug }
       progress[slug] = nil
       problems[slug] = nil
+      scanned.remove(slug)
       let ids = project.components.map(\.id)
       ProjectCatalog.remove(slug: slug)
       for id in ids {
@@ -203,7 +279,9 @@ final class ProjectSync {
       wakeStages(slug: slug)
     case .components(let items, let bySelf):
       arrived(items, slug: slug, bySelf: bySelf)
+      scanned.insert(slug)
     case .stopped(let reason):
+      scanned.remove(slug)
       ProjectCatalog.setPort(nil, slug: slug)
       servers[slug] = nil
       slowToStart.remove(slug)

@@ -152,33 +152,62 @@ final class WebHost {
 }
 
 /// A page with no window of its own that answers questions the web code alone can answer: what
-/// components exist, and what CSS a tune produces.
+/// components exist, and what CSS a tune produces. It holds a whole web process, and the questions come
+/// in bursts, so it opens when asked and closes after a quiet minute. It keeps nothing between questions.
 final class Runtime {
-  private let web: StageWebView
-  private var ready: CheckedContinuation<Void, Never>?
+  private let host: WebHost
+  private let backstage: NSView
+  private var web: StageWebView?
   private var isReady = false
+  private var waiting: [CheckedContinuation<Void, Never>] = []
+  private var busy = 0
+  private var idle: Task<Void, Never>?
+
+  static let closesAfter: Duration = .seconds(60)
 
   init(host: WebHost, backstage: NSView) {
-    web = host.makeWebView()
-    backstage.addSubview(web)
+    self.host = host
+    self.backstage = backstage
   }
-
-  var webView: WKWebView { web }
 
   func markReady() {
     isReady = true
-    ready?.resume()
-    ready = nil
+    waiting.forEach { $0.resume() }
+    waiting = []
   }
 
   func start() async {
-    web.load(URLRequest(url: SchemeHandler.root.appending(path: "runtime.html")))
+    if web == nil {
+      let web = host.makeWebView()
+      backstage.addSubview(web)
+      self.web = web
+      isReady = false
+      web.load(URLRequest(url: SchemeHandler.root.appending(path: "runtime.html")))
+    }
     guard !isReady else { return }
-    await withCheckedContinuation { ready = $0 }
+    await withCheckedContinuation { waiting.append($0) }
   }
 
   func call(_ body: String, _ arguments: [String: Any] = [:]) async throws -> Data {
-    try await web.callJSON(body, arguments)
+    busy += 1
+    idle?.cancel()
+    defer {
+      busy -= 1
+      if busy == 0 { closeLater() }
+    }
+    await start()
+    guard let web else { throw CocoaError(.featureUnsupported) }
+    return try await web.callJSON(body, arguments)
+  }
+
+  private func closeLater() {
+    idle = Task { [weak self] in
+      try? await Task.sleep(for: Self.closesAfter)
+      guard !Task.isCancelled, let self, self.busy == 0, self.isReady else { return }
+      self.web?.removeFromSuperview()
+      self.web = nil
+      self.isReady = false
+    }
   }
 
   func catalog() async throws -> Catalog {

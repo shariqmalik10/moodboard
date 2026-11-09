@@ -24,6 +24,7 @@
 		5A231E1AB09C47462A90624E /* LayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B243E24A36E8E724D172E7 /* LayoutTests.swift */; };
 		5C95CE78B0B0CD36A5DB0FAE /* TileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA2887049538FE37EDED35E /* TileView.swift */; };
 		5FF2ECF0B1A0A3A1830C9800 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 0A6BCA9F3F53A7C4FC506DB4 /* AppIcon.icns */; };
+		60D8C160611A240296B1C9B9 /* ProjectFinderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1137FFD7F8101C849D956DBF /* ProjectFinderTests.swift */; };
 		9A36D0A29FEF23606C157F76 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 837D9AA74E9E0E0A7A3411C3 /* AppDelegate.swift */; };
 		9F845EEF93B9BF854FD7CFB0 /* WebHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902A0A6F20FD6D0D0BF86BBC /* WebHost.swift */; };
 		A04504D9DCBF58A372E9B8B6 /* Chrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7BCBE67E2CC4CA3539C3EC /* Chrome.swift */; };
@@ -34,6 +35,7 @@
 		B1A134106268A376B1A47062 /* ProjectCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3CD076DEA2BE3A1169D5575 /* ProjectCatalog.swift */; };
 		B6AF104A1C729BA03C808117 /* MCPBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53872DE40EB1B0D0D5830ED /* MCPBridge.swift */; };
 		C14E807D79474D09DE9C3400 /* PaperPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B66C8E89B4ACEF267CF39F9 /* PaperPanel.swift */; };
+		CFFD3D9352C8361C1C9C6EB6 /* ProjectFinder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B3E260BDD046F863DBB6D49 /* ProjectFinder.swift */; };
 		D1BD1E80898865E69149527D /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF273D49F2E1F542A76D258F /* Views.swift */; };
 		D6A275785473627B27B60044 /* FocusController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A357F220809AD92BE1682EEC /* FocusController.swift */; };
 		D7D2D2F237FDAE5A868EF64E /* Layout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B33B2DD6C9DC2F159EDD0C11 /* Layout.swift */; };
@@ -62,8 +64,10 @@
 		0E1FC1133EE32F3F3B2F7BA8 /* ComponentLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentLibrary.swift; sourceTree = "<group>"; };
 		0E7BCBE67E2CC4CA3539C3EC /* Chrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chrome.swift; sourceTree = "<group>"; };
 		1130BAFD46D3BC5AC4D1C5D3 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
+		1137FFD7F8101C849D956DBF /* ProjectFinderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFinderTests.swift; sourceTree = "<group>"; };
 		223F67F2B9A7AB1D9FDA856F /* Motion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Motion.swift; sourceTree = "<group>"; };
 		2C183E2EDBCDD9050AD262DE /* BoardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardStore.swift; sourceTree = "<group>"; };
+		3B3E260BDD046F863DBB6D49 /* ProjectFinder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFinder.swift; sourceTree = "<group>"; };
 		3CA7EE6357BDE9353E2C9A5F /* Handoffs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Handoffs.swift; sourceTree = "<group>"; };
 		4CE0926EAB84C9DEBEC5AC64 /* ProjectsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsPanel.swift; sourceTree = "<group>"; };
 		50CFE2F55D85A55B8DC206C1 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
@@ -138,6 +142,7 @@
 			isa = PBXGroup;
 			children = (
 				A2B243E24A36E8E724D172E7 /* LayoutTests.swift */,
+				1137FFD7F8101C849D956DBF /* ProjectFinderTests.swift */,
 				9079BE21C60FEFEEADE46812 /* ViewsTests.swift */,
 			);
 			path = MoodboardTests;
@@ -201,6 +206,7 @@
 			isa = PBXGroup;
 			children = (
 				C3CD076DEA2BE3A1169D5575 /* ProjectCatalog.swift */,
+				3B3E260BDD046F863DBB6D49 /* ProjectFinder.swift */,
 				DABF942ACD2135A340F596BD /* ProjectServer.swift */,
 				4CE0926EAB84C9DEBEC5AC64 /* ProjectsPanel.swift */,
 				64623353DAAA9C8EFD1F7561 /* ProjectSync.swift */,
@@ -378,6 +384,7 @@
 				A3FB69B18EA965E70D57B6A3 /* PaperWatch.swift in Sources */,
 				1EC7A6387D3491EB86F0B0C7 /* Plates.swift in Sources */,
 				B1A134106268A376B1A47062 /* ProjectCatalog.swift in Sources */,
+				CFFD3D9352C8361C1C9C6EB6 /* ProjectFinder.swift in Sources */,
 				13B6CB5E23704A46ABDB9679 /* ProjectServer.swift in Sources */,
 				0E39C55587448ACB6EED3D02 /* ProjectSync.swift in Sources */,
 				210E9303466DBD93D9F0FA5D /* ProjectsPanel.swift in Sources */,
@@ -397,6 +404,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5A231E1AB09C47462A90624E /* LayoutTests.swift in Sources */,
+				60D8C160611A240296B1C9B9 /* ProjectFinderTests.swift in Sources */,
 				A71C2C53223C32A61A31C751 /* ViewsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

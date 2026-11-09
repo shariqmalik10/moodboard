@@ -54,6 +54,16 @@ if (major < 20 || (major === 20 && minor < 19)) {
   process.exit(1);
 }
 
+/** Every node_modules Node would look in from the project, since a monorepo keeps its packages in the root's. */
+function installedPackages(from: string): string[] {
+  const found: string[] = [];
+  for (let folder = from; ; folder = path.dirname(folder)) {
+    const packages = path.join(folder, "node_modules");
+    if (fs.existsSync(packages)) found.push(fs.realpathSync(packages));
+    if (path.dirname(folder) === folder) return found;
+  }
+}
+
 const scanner = new Scanner(root, argument("slug"));
 scanner.scan();
 const samples = new Samples(root, scanner.options, () => scanner.sourceFiles());
@@ -411,7 +421,7 @@ const server = await createServer({
     port: Number(argument("port") ?? 0),
     strictPort: false,
     hmr: { overlay: false },
-    fs: { allow: [root, here, fs.realpathSync(path.join(root, "node_modules"))], deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**"] },
+    fs: { allow: [root, here, ...installedPackages(root)], deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**"] },
     watch: { ignored: ["**/.git/**", "**/.next/**", "**/node_modules/**", "**/out/**"] },
   },
 });

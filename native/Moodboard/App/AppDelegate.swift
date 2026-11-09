@@ -29,12 +29,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     window.contentView = root
     NSApp.mainMenu = MainMenu.build()
     window.makeKeyAndOrderFront(nil)
-    #if DEBUG
-      // tools/video launches a Debug build in the background for a take, and it mustn't take over the screen.
-      if !UserDefaults.standard.bool(forKey: "MoodboardRecording") { NSApp.activate() }
-    #else
-      NSApp.activate()
-    #endif
+    // Claude Code opens the wall behind what the person is doing, and tools/video does the same for a take.
+    let inBackground = ["MoodboardInBackground", "MoodboardRecording"].contains { UserDefaults.standard.bool(forKey: $0) }
+    if !inBackground { NSApp.activate() }
 
     let model = AppModel(host: host, root: root, window: window)
     self.model = model
@@ -278,9 +275,12 @@ final class AppModel {
 
   // MARK: Adding to the wall
 
+  /// A dropped folder is a project to connect. Anything else is a picture or a film for the wall.
   func addMaterials(_ urls: [URL], at point: CGPoint?) {
+    let folders = urls.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
+    folders.forEach(projects.connectAsked)
     Task {
-      for url in urls {
+      for url in urls where !folders.contains(url) {
         do {
           let (id, material) = try await MaterialStore.add(url)
           place(id, material: material, at: point)

@@ -54,9 +54,8 @@ enum MCPBridge {
     ),
     tool(
       "connect_project",
-      "Connects a Next.js project on this Mac. Its components join the wall as live tiles, saved edits to them show at once, and moving a dial edits the source file. It adds nothing to the project's folder.",
-      ["path": string("Absolute path of the project's folder.")],
-      required: ["path"]
+      "Connects a Next.js project on this Mac and waits up to 45 seconds for its components to join the wall as live tiles. Saved edits to them show at once, and moving a dial edits the source file. It adds nothing to the project's folder. A folder inside an app, or a monorepo with one app, connects that app. Connecting a project again is safe, and retries one that stopped. The result says how many components are on the wall, which aren't and why, any problem, and what to do next. It opens Moodboard behind other windows if it's closed.",
+      ["path": string("The project's folder. A relative path starts from the folder Claude Code is working in. Leave it out to connect that folder.")]
     ),
     tool("list_projects", "Lists connected projects: how many components are on the wall, which aren't and why, and any problem running them."),
     tool(
@@ -73,6 +72,11 @@ enum MCPBridge {
   ]
 
   private static let prompts: [JSON] = [
+    [
+      "name": "connect",
+      "description": "Connect this project to the wall, and say what joined it.",
+      "arguments": [["name": "path", "description": "The project's folder. Leave it out for the folder Claude Code is working in.", "required": false]],
+    ],
     [
       "name": "implement_component",
       "description": "Build the component open on the wall, as tuned, into this repository.",
@@ -143,6 +147,8 @@ enum MCPBridge {
   /// A tool that fails says so in its result, so Claude Code can read why and do something about it.
   private static func callTool(_ name: String, _ arguments: JSON) -> JSON {
     do {
+      var arguments = arguments
+      if name == "connect_project" { arguments["path"] = try projectPath(arguments["path"] as? String) }
       let result = try WallSocket.ask(name, arguments)
       let data = try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys, .fragmentsAllowed, .withoutEscapingSlashes])
       return ["content": [["type": "text", "text": String(decoding: data, as: UTF8.self)]]]
@@ -151,12 +157,23 @@ enum MCPBridge {
     }
   }
 
+  /// Claude Code starts this server in the folder it's working in, so that folder is what "this project" means.
+  /// The wall runs elsewhere, so a relative path is made whole here.
+  nonisolated static func projectPath(_ given: String?, workingIn folder: String = FileManager.default.currentDirectoryPath) throws -> String {
+    let given = given.map { NSString(string: $0).expandingTildeInPath } ?? ""
+    if given.hasPrefix("/") { return given }
+    guard folder != "/" || !given.isEmpty else { throw ToolError("Claude Code didn't start this server in a project folder. Pass path, the project's folder.") }
+    return URL(filePath: given.isEmpty ? "." : given, relativeTo: URL(filePath: folder, directoryHint: .isDirectory)).standardizedFileURL.path
+  }
+
   private static func prompt(_ name: String, _ arguments: JSON) throws -> JSON {
     let text: String
     switch name {
     case "implement_component":
       let brief = try WallSocket.ask("get_component", arguments) as? JSON
       text = (brief?["markdown"] as? String ?? "") + "\n\nBuild this into the repository you're working in. Then call mark_built from the moodboard server for \(brief?["id"] as? String ?? "this component")."
+    case "connect":
+      text = "Call connect_project from the moodboard server\((arguments["path"] as? String).map { " with path \"\($0)\"" } ?? " with no path, to connect the project in this folder"). Then tell me in a sentence or two how many components joined the wall. If its result has a problem, or components it couldn't show, explain each in plain words and do what its next field says, or tell me what I need to do."
     case "build_tuned":
       text = "Call list_components from the moodboard server. For each component with needsBuilding, call get_component and build it into the repository you're working in, following its brief. Call mark_built after each one. Tell me if a component has tuneNoLongerApplies before you build it."
     case "apply_notes":
@@ -214,13 +231,16 @@ private enum WallSocket {
     // `-g` opens it behind whatever the person is doing.
     let open = Process()
     open.executableURL = URL(filePath: "/usr/bin/open")
-    open.arguments = ["-g", Bundle.main.bundlePath]
+    open.arguments = ["-g", Bundle.main.bundlePath, "--args", "-MoodboardInBackground", "YES"]
     try open.run()
     open.waitUntilExit()
+    guard open.terminationStatus == 0 else {
+      throw ToolError("Moodboard couldn't be opened from \(Bundle.main.bundlePath). Install it again, then run: claude mcp add -s user moodboard -- ~/Applications/Moodboard.app/Contents/MacOS/Moodboard --mcp")
+    }
     for _ in 0..<150 {
       usleep(100_000)
       if let fd = connectOnce() { return fd }
     }
-    throw ToolError("Moodboard didn't open.")
+    throw ToolError("Moodboard opened but didn't start within 15 seconds. If macOS is showing a dialog about it, answer it, then try again.")
   }
 }
