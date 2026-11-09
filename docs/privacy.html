@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moodboard privacy</title>
+<meta name="description" content="Moodboard has no account, no analytics and no telemetry. What stays on your Mac and what can reach the internet.">
+<meta name="theme-color" content="#f3f0e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161618'/%3E%3Cg fill='%23e9e4d6'%3E%3Crect x='5' y='6' width='6' height='9' rx='1.5'/%3E%3Crect x='5' y='17' width='6' height='9' rx='1.5'/%3E%3Crect x='13' y='6' width='6' height='6' rx='1.5'/%3E%3Crect x='13' y='14' width='6' height='12' rx='1.5'/%3E%3Crect x='21' y='6' width='6' height='11' rx='1.5'/%3E%3Crect x='21' y='19' width='6' height='7' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="container nav">
+  <a class="brand" href="./" aria-label="Moodboard home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-tile" width="32" height="32" rx="7"/><g class="mark-cell"><rect x="5" y="6" width="6" height="9" rx="1.5"/><rect x="5" y="17" width="6" height="9" rx="1.5"/><rect x="13" y="6" width="6" height="6" rx="1.5"/><rect x="13" y="14" width="6" height="12" rx="1.5"/><rect x="21" y="6" width="6" height="11" rx="1.5"/><rect x="21" y="19" width="6" height="7" rx="1.5"/></g></svg>
+    Moodboard
+  </a>
+  <nav aria-label="Site">
+    <ul>
+      <li><a href="technical.html">Technical</a></li>
+      <li><a href="privacy.html" aria-current="page">Privacy</a></li>
+      <li><a href="https://github.com/shariqmalik10/moodboard">GitHub</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main class="container doc">
+  <h1>Privacy</h1>
+  <p class="lead">Moodboard has no account, no analytics and no telemetry. Your code stays on your Mac.</p>
+
+  <h2>What stays on your Mac</h2>
+  <ul>
+    <li>Your project runs on a Vite server on your Mac, reachable only from it.</li>
+    <li>Tunes, notes, pictures, stills and the server cache live in <code>~/Library/Application Support/Moodboard</code>. Nothing is written into your project except the literals you change with a dial.</li>
+    <li>Paper is read through its local server on your Mac. Moodboard never writes to Paper.</li>
+  </ul>
+
+  <h2>What can reach the internet</h2>
+  <ul>
+    <li>Your components load what they would load in a browser, such as Google fonts. Images and fonts in Paper designs load from Paper.</li>
+    <li><strong>Send</strong> runs Claude Code on your Mac with the component’s brief. Claude Code sends it to Anthropic under your own Claude Code account, as any Claude Code request does. Nothing is sent until you press Send or ask Claude Code yourself.</li>
+    <li>The install command and the zip download come from GitHub.</li>
+  </ul>
+
+  <h2>This website</h2>
+  <p>This site is hosted on GitHub Pages. It sets no cookies and runs no analytics. GitHub may keep its own server logs.</p>
+
+  <h2>Remove everything</h2>
+  <p>Delete the app and <code>~/Library/Application Support/Moodboard</code>. If you added it to Claude Code, run <code>claude mcp remove moodboard -s user</code>.</p>
+</main>
+
+<footer class="container foot">
+  <span>MIT licensed</span>
+  <span><a href="./">Back to Moodboard</a></span>
+</footer>
+</body>
+</html>

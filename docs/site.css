@@ -1,0 +1,118 @@
+/* Hallmark · shape: Workbench (/), Long Document (/technical.html, /privacy.html) · genre: modern-minimal · theme: brand · redesign: full · job: try
+ * paper: oklch(95.6% 0.011 88) · accent: oklch(47% 0.075 150) · display: New York · body: SF Pro · hero: Stage (/) · nav: wordmark and three quiet links · footer: one line · signature: the film's own timeline, cut into its chapters at their real lengths, tap one to jump
+ * axes: light/roman-serif/chromatic-green · posture: accent on the copy button and the playing chapter · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H5 E4 S4 R5 V3 · weakest: V, a two-column product hero is the category's habit; the chapter strip under the film is drawn from the film's real cue lengths, so it could belong to no other page */
+/* Hallmark · waive 1 · .doc h3 only, inside the technical document; h1 and h2 use New York · the Tools and Prompts subheads are run-in labels in the body face, not display heads */
+/* Hallmark · dropped https://github.com/shariqmalik10/moodboard#build-from-source · building from source now lives on technical.html, linked from the nav */
+/* Hallmark · dismissed F4 · .bar i is the playing chapter's progress fill, not a button; the copy button is the only filled control */
+@import url("./tokens.css");
+@import url("./base.css");
+
+:root { --nav-h: 72px; }
+
+body { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr); }
+
+/* Chrome */
+.nav { display: flex; align-items: center; justify-content: space-between; min-height: var(--nav-h); }
+.brand { display: flex; align-items: center; gap: var(--space-sm); font-weight: 600; text-decoration: none; letter-spacing: -0.01em; }
+.brand svg { width: 24px; height: 24px; }
+.mark-tile { fill: var(--color-stage); }
+.mark-cell { fill: var(--color-mark); }
+.nav ul { display: flex; gap: var(--space-lg); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+.nav a:not(.brand) { color: var(--color-muted); text-decoration: none; white-space: nowrap; padding-block: var(--space-sm); }
+.nav a:not(.brand):hover, .nav a[aria-current] { color: var(--color-ink); }
+.foot { display: flex; flex-wrap: wrap; gap: var(--space-2xs) var(--space-lg); justify-content: space-between; padding-block: var(--space-md) var(--space-lg); font-size: var(--text-xs); color: var(--color-muted); }
+
+/* Home: the hero is the page */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+  gap: var(--space-2xl);
+  align-items: center;
+  padding-block: var(--space-md) var(--space-xl);
+}
+.pitch { display: grid; gap: var(--space-lg); align-content: center; }
+.hero h1 { font-size: clamp(2.25rem, 3.4vw + 0.25rem, 3.5rem); font-weight: 500; line-height: 1.04; letter-spacing: -0.025em; }
+.pitch .lead { color: var(--color-ink-2); }
+.req { font-size: var(--text-sm); color: var(--color-muted); max-width: 44ch; }
+.req a { color: var(--color-ink); }
+
+.cmd { display: flex; align-items: center; gap: var(--space-xs); min-width: 0; padding: var(--space-2xs) var(--space-2xs) var(--space-2xs) var(--space-sm); background: var(--color-paper-2); border: 1px solid var(--color-rule); border-radius: var(--radius-control); }
+.cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: var(--text-xs)/2 var(--font-code); scrollbar-width: none; }
+.button {
+  flex: none; min-height: 44px; padding-inline: var(--space-md);
+  font: 600 var(--text-sm)/1 var(--font-body); white-space: nowrap;
+  color: var(--color-accent-ink); background: var(--color-accent);
+  border: 0; border-radius: calc(var(--radius-control) - 4px); cursor: pointer;
+  transition: transform var(--dur-micro) var(--ease-out), background-color var(--dur-short) var(--ease-out);
+}
+.button:hover { background: color-mix(in oklab, var(--color-accent) 88%, var(--color-ink)); }
+.button:active { transform: scale(0.96); }
+.button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.film { margin: 0; display: grid; gap: var(--space-sm); min-width: 0; }
+.screen {
+  aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--radius-card);
+  background: var(--color-stage);
+  box-shadow: 0 0 0 1px var(--color-film-ring), 0 32px 64px -40px var(--color-film-shadow);
+}
+.screen video { width: 100%; height: 100%; object-fit: cover; }
+
+/* The reel: the film's timeline, cut where its chapters fall */
+.reel { display: flex; align-items: flex-start; gap: var(--space-sm); }
+.toggle {
+  flex: none; width: 44px; height: 44px; display: grid; place-items: center;
+  color: var(--color-ink); background: var(--color-paper-2);
+  border: 1px solid var(--color-rule); border-radius: var(--radius-pill); cursor: pointer;
+  transition: transform var(--dur-micro) var(--ease-out);
+}
+.toggle:hover { border-color: var(--color-muted); }
+.toggle:active { transform: scale(0.94); }
+.toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+.toggle svg { width: 14px; height: 14px; }
+.toggle .play, .paused .toggle .pause { display: none; }
+.paused .toggle .play { display: block; }
+.chapters { flex: 1; min-width: 0; display: flex; gap: var(--space-2xs); margin: 0; padding: 0; list-style: none; }
+.chapters li { flex: var(--len, 1) 1 0; min-width: 0; }
+.chapters button {
+  width: 100%; min-height: 44px; display: grid; align-content: start; gap: var(--space-xs);
+  padding: var(--space-xs) 0 0; margin: 0; background: none; border: 0; cursor: pointer;
+  font: var(--text-sm)/1.2 var(--font-body); color: var(--color-muted); text-align: left;
+  transition: color var(--dur-short) var(--ease-out);
+}
+.chapters button:hover, .chapters button[aria-current] { color: var(--color-ink); }
+.chapters button:active .bar { transform: scaleY(1.6); }
+.chapters button:disabled { cursor: not-allowed; }
+.chapters .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar { display: block; height: 4px; border-radius: var(--radius-pill); background: var(--color-rule); overflow: hidden; transition: transform var(--dur-micro) var(--ease-out); }
+.bar i { display: block; height: 100%; background: var(--color-ink); transform-origin: left; transform: scaleX(var(--p, 0)); }
+.chapters button[aria-current] .bar i { background: var(--color-accent); }
+.caption { margin: 0; padding-left: calc(44px + var(--space-sm)); min-height: 1.5em; font: 400 var(--text-md)/1.4 var(--font-display); color: var(--color-ink-2); }
+
+/* Long documents */
+.doc { padding-block: var(--space-xl) var(--space-3xl); }
+.doc > * { max-width: 68ch; }
+.doc h1 { font-size: var(--text-display-s); font-weight: 500; margin-bottom: var(--space-md); }
+.doc .lead { color: var(--color-ink-2); margin-bottom: var(--space-2xl); }
+.doc h2 { font-size: var(--text-2xl); font-weight: 500; margin: var(--space-2xl) 0 var(--space-sm); }
+.doc h3 { font-family: var(--font-body); font-size: var(--text-md); font-weight: 600; letter-spacing: 0; margin: var(--space-lg) 0 var(--space-2xs); }
+.doc p, .doc ul, .doc ol { margin: 0 0 var(--space-md); color: var(--color-ink-2); }
+.doc li { margin-bottom: var(--space-2xs); }
+.doc code { font: 0.9em var(--font-code); color: var(--color-ink); }
+.doc pre { margin: 0 0 var(--space-md); padding: var(--space-sm) var(--space-md); overflow-x: auto; background: var(--color-paper-2); border: 1px solid var(--color-rule); border-radius: var(--radius-control); }
+.doc pre code { font-size: var(--text-xs); line-height: 1.7; }
+.doc dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-xs) var(--space-lg); margin: 0 0 var(--space-md); }
+.doc dt code { white-space: nowrap; }
+.doc dd { margin: 0; color: var(--color-ink-2); }
+.doc a { color: var(--color-ink); }
+
+@media (max-width: 60rem) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); padding-top: var(--space-xs); }
+  .chapters .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .chapters button { padding-top: 20px; }
+}
+@media (max-width: 40rem) {
+  .nav ul { gap: var(--space-md); }
+  .doc dl { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .doc dd { margin-bottom: var(--space-sm); }
+}

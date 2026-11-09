@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Moodboard</title>
-<meta name="description" content="A Mac app that puts your Next.js components on an endless wall, running live. Move a dial and it rewrites your source. Free and open source.">
+<meta name="description" content="A Mac app that plays every component of a Next.js project live on an endless wall. Move a dial and it rewrites your source. Free and open source.">
 <meta property="og:title" content="Moodboard">
 <meta property="og:description" content="Your components, on a wall, running. Move a dial and it rewrites your source.">
 <meta property="og:image" content="https://moodboard.shariqmalik.dev/media/poster.jpg">
@@ -19,152 +19,128 @@
 <meta name="theme-color" content="#f3f0e8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161618'/%3E%3Cg fill='%23e9e4d6'%3E%3Crect x='5' y='6' width='6' height='9' rx='1.5'/%3E%3Crect x='5' y='17' width='6' height='9' rx='1.5'/%3E%3Crect x='13' y='6' width='6' height='6' rx='1.5'/%3E%3Crect x='13' y='14' width='6' height='12' rx='1.5'/%3E%3Crect x='21' y='6' width='6' height='11' rx='1.5'/%3E%3Crect x='21' y='19' width='6' height='7' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
-<style>
-:root {
-  --bg: #f3f0e8;
-  --ink: #1d1b17;
-  --muted: #6b6458;
-  --line: #ddd7c9;
-  --raised: #fbfaf6;
-  --accent: #3d6b47;
-  --accent-ink: #ffffff;
-  --stage: #161618;
-  --film-ring: rgba(29, 27, 23, 0.1);
-  --film-shadow: 0 30px 70px -36px rgba(29, 27, 23, 0.5), 0 10px 24px -16px rgba(29, 27, 23, 0.3);
-  --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
-  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, monospace;
-  color-scheme: light dark;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #121214;
-    --ink: #ecebe6;
-    --muted: #9b988f;
-    --line: #2a2a2e;
-    --raised: #1b1b1e;
-    --accent: #84b58f;
-    --accent-ink: #10150f;
-    --stage: #0b0b0c;
-    --film-ring: rgba(255, 255, 255, 0.09);
-    --film-shadow: 0 30px 70px -36px rgba(0, 0, 0, 0.9);
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #121214;
-  --ink: #ecebe6;
-  --muted: #9b988f;
-  --line: #2a2a2e;
-  --raised: #1b1b1e;
-  --accent: #84b58f;
-  --accent-ink: #10150f;
-  --stage: #0b0b0c;
-  --film-ring: rgba(255, 255, 255, 0.09);
-  --film-shadow: 0 30px 70px -36px rgba(0, 0, 0, 0.9);
-}
-
-* { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-body {
-  margin: 0;
-  min-height: 100svh;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  background: var(--bg);
-  color: var(--ink);
-  font: 16px/1.5 var(--sans);
-  -webkit-font-smoothing: antialiased;
-}
-a { color: inherit; text-underline-offset: 3px; }
-video { display: block; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
-
-.wrap { width: min(1200px, 100% - 32px); margin-inline: auto; }
-
-.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; text-decoration: none; letter-spacing: -0.01em; }
-.brand svg { width: 24px; height: 24px; }
-.top a.gh { font-size: 15px; color: var(--muted); text-decoration: none; }
-.top a.gh:hover { color: var(--ink); }
-
-main {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: 56px;
-  align-items: center;
-  padding: 16px 0 24px;
-}
-.copy-col { display: grid; gap: 18px; }
-h1 {
-  font: 500 clamp(36px, 4.2vw, 54px)/1.04 var(--serif);
-  letter-spacing: -0.025em; margin: 0; text-wrap: balance;
-}
-.lede { margin: 0; font-size: 18px; color: var(--muted); text-wrap: pretty; }
-
-.cmd { display: flex; align-items: center; gap: 8px; background: var(--raised); border: 1px solid var(--line); border-radius: 10px; padding: 5px 5px 5px 12px; min-width: 0; margin-top: 6px; }
-.cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: 13px/2 var(--mono); scrollbar-width: none; }
-.copy { flex: none; font: 600 13px/1 var(--sans); padding: 8px 12px; border-radius: 7px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; transition: transform 120ms ease-out; }
-.copy:active { transform: scale(0.96); }
-
-.fine { margin: 0; font-size: 14px; color: var(--muted); text-wrap: pretty; }
-.fine a { color: var(--ink); }
-
-.screen {
-  margin: 0; aspect-ratio: 16 / 10; overflow: hidden;
-  border-radius: 12px; background: var(--stage);
-  box-shadow: 0 0 0 1px var(--film-ring), var(--film-shadow);
-  max-height: calc(100svh - 190px);
-  justify-self: end; width: 100%;
-}
-.screen video { width: 100%; height: 100%; object-fit: cover; }
-
-footer { padding: 14px 0 20px; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 20px; justify-content: space-between; }
-
-@media (max-width: 860px) {
-  main { grid-template-columns: 1fr; gap: 28px; padding-top: 8px; }
-  .screen { max-height: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .copy { transition: none; }
-}
-</style>
+<link rel="preload" as="image" href="media/poster.jpg" fetchpriority="high">
+<link rel="stylesheet" href="site.css">
 </head>
 <body>
-<header class="wrap top">
+<header class="container nav">
   <a class="brand" href="./" aria-label="Moodboard home">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#161618"/><g fill="#e9e4d6"><rect x="5" y="6" width="6" height="9" rx="1.5"/><rect x="5" y="17" width="6" height="9" rx="1.5"/><rect x="13" y="6" width="6" height="6" rx="1.5"/><rect x="13" y="14" width="6" height="12" rx="1.5"/><rect x="21" y="6" width="6" height="11" rx="1.5"/><rect x="21" y="19" width="6" height="7" rx="1.5"/></g></svg>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-tile" width="32" height="32" rx="7"/><g class="mark-cell"><rect x="5" y="6" width="6" height="9" rx="1.5"/><rect x="5" y="17" width="6" height="9" rx="1.5"/><rect x="13" y="6" width="6" height="6" rx="1.5"/><rect x="13" y="14" width="6" height="12" rx="1.5"/><rect x="21" y="6" width="6" height="11" rx="1.5"/><rect x="21" y="19" width="6" height="7" rx="1.5"/></g></svg>
     Moodboard
   </a>
-  <a class="gh" href="https://github.com/shariqmalik10/moodboard">GitHub</a>
+  <nav aria-label="Site">
+    <ul>
+      <li><a href="technical.html">Technical</a></li>
+      <li><a href="privacy.html">Privacy</a></li>
+      <li><a href="https://github.com/shariqmalik10/moodboard">GitHub</a></li>
+    </ul>
+  </nav>
 </header>
 
-<main class="wrap">
-  <div class="copy-col">
+<main class="container hero">
+  <div class="pitch">
     <h1>Your components, on a wall, running.</h1>
-    <p class="lede">A Mac app that plays every component of a Next.js project live on an endless wall. Move a dial and it rewrites your source.</p>
-    <div class="cmd"><code id="curl">curl -fsSL https://raw.githubusercontent.com/shariqmalik10/moodboard/main/scripts/install.sh | sh</code><button class="copy" type="button" data-copy="curl">Copy</button></div>
-    <p class="fine">Apple silicon, macOS 26 or later. Connecting a project needs Node 20.19 or newer. Free, open source, and it sends nothing anywhere.</p>
-    <p class="fine">Or download <a href="https://github.com/shariqmalik10/moodboard/releases/latest/download/Moodboard.zip">Moodboard.zip</a>, or <a href="https://github.com/shariqmalik10/moodboard#build-from-source">build from source</a> on any Mac.</p>
+    <p class="lead">A Mac app that plays every component of a Next.js project live. Move a dial and it rewrites your source.</p>
+    <div class="cmd"><code id="curl">curl -fsSL https://raw.githubusercontent.com/shariqmalik10/moodboard/main/scripts/install.sh | sh</code><button class="button copy" type="button" data-copy="curl">Copy</button></div>
+    <p class="req">Apple silicon, macOS 26 or later. Node 20.19 or newer to connect a project. Free and open source. Or download <a href="https://github.com/shariqmalik10/moodboard/releases/latest/download/Moodboard.zip">the zip</a>.</p>
   </div>
 
-  <figure class="screen">
-    <video id="demo" width="1920" height="1200" muted loop playsinline controls preload="metadata" poster="media/poster.jpg" aria-label="Moodboard demo, no sound">
-      <source src="media/demo.mp4" type="video/mp4">
-      <track kind="chapters" src="media/chapters.vtt" srclang="en" label="Chapters" default>
-    </video>
+  <figure class="film">
+    <div class="screen">
+      <video id="demo" width="1920" height="1200" autoplay muted loop playsinline preload="auto" poster="media/poster.jpg" aria-label="Moodboard demo film, no sound">
+        <source src="media/demo.mp4" type="video/mp4">
+        <track kind="chapters" src="media/chapters.vtt" srclang="en" label="Chapters" default>
+      </video>
+    </div>
+    <figcaption>
+      <div class="reel">
+        <button class="toggle" type="button" aria-label="Pause the film">
+          <svg class="play" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 1.8v10.4a.6.6 0 0 0 .9.5l8.3-5.2a.6.6 0 0 0 0-1L4.4 1.3a.6.6 0 0 0-.9.5Z" fill="currentColor"/></svg>
+          <svg class="pause" viewBox="0 0 14 14" aria-hidden="true"><rect x="2.5" y="1.5" width="3.2" height="11" rx="1" fill="currentColor"/><rect x="8.3" y="1.5" width="3.2" height="11" rx="1" fill="currentColor"/></svg>
+        </button>
+        <ol class="chapters" aria-label="Chapters">
+          <li style="--len: 3.957"><button type="button" data-start="0" data-end="3.957" data-text="Try the demo, or connect a Next.js project."><span class="bar"><i></i></span><span class="label">Connect</span></button></li>
+          <li style="--len: 6.311"><button type="button" data-start="3.957" data-end="10.268" data-text="Every component runs live, in a loop."><span class="bar"><i></i></span><span class="label">Live</span></button></li>
+          <li style="--len: 6.743"><button type="button" data-start="10.268" data-end="17.011" data-text="Open a tile and it's yours to play with."><span class="bar"><i></i></span><span class="label">Play</span></button></li>
+          <li style="--len: 4.883"><button type="button" data-start="17.011" data-end="21.894" data-text="Move a dial and it rewrites your source."><span class="bar"><i></i></span><span class="label">Tune</span></button></li>
+          <li style="--len: 5.51"><button type="button" data-start="21.894" data-end="27.404" data-text="Edit the file and the tile redraws."><span class="bar"><i></i></span><span class="label">Edit</span></button></li>
+          <li style="--len: 8.83"><button type="button" data-start="27.404" data-end="36.234" data-text="See it all as a wall, a grid or a list."><span class="bar"><i></i></span><span class="label">Views</span></button></li>
+        </ol>
+      </div>
+      <p class="caption" aria-hidden="true">Try the demo, or connect a Next.js project.</p>
+    </figcaption>
   </figure>
 </main>
 
-<footer class="wrap">
-  <span>Works with Next.js, and optionally Paper and Claude Code.</span>
+<footer class="container foot">
   <span>MIT licensed</span>
+  <span>Works with Next.js, and optionally Paper and Claude Code</span>
 </footer>
 
 <script>
 (() => {
-  // The film plays muted unless the reader prefers less motion.
+  // The film loops on its own unless the reader prefers less motion. The chapter strip follows it and seeks it.
   const video = document.getElementById("demo");
-  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) video.play().catch(() => {});
+  const film = video.closest(".film");
+  const toggle = film.querySelector(".toggle");
+  const caption = film.querySelector(".caption");
+  const buttons = [...film.querySelectorAll(".chapters button")];
+  let frame = 0;
+
+  // A new cut brings its own chapter times; the labels stay the page's.
+  const track = video.querySelector("track");
+  const retime = () => {
+    const cues = [...(track.track.cues ?? [])];
+    if (cues.length !== buttons.length) return;
+    cues.forEach((cue, i) => {
+      const button = buttons[i];
+      button.dataset.start = cue.startTime;
+      button.dataset.end = cue.endTime;
+      button.dataset.text = cue.text;
+      button.parentElement.style.setProperty("--len", (cue.endTime - cue.startTime).toFixed(3));
+    });
+    paint();
+  };
+  track.track.mode = "hidden";
+  if (track.readyState === 2) retime(); else track.addEventListener("load", retime);
+
+  function paint() {
+    const t = video.currentTime;
+    for (const button of buttons) {
+      const start = +button.dataset.start, end = +button.dataset.end;
+      button.style.setProperty("--p", Math.min(1, Math.max(0, (t - start) / (end - start))).toFixed(4));
+      const current = t >= start && t < end;
+      button.toggleAttribute("aria-current", current);
+      if (current && caption.textContent !== button.dataset.text) caption.textContent = button.dataset.text;
+    }
+  }
+  const tick = () => { paint(); frame = requestAnimationFrame(tick); };
+
+  video.addEventListener("play", () => {
+    film.classList.remove("paused");
+    toggle.setAttribute("aria-label", "Pause the film");
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(tick);
+  });
+  video.addEventListener("pause", () => {
+    film.classList.add("paused");
+    toggle.setAttribute("aria-label", "Play the film");
+    cancelAnimationFrame(frame);
+    paint();
+  });
+  video.addEventListener("seeked", paint);
+
+  toggle.addEventListener("click", () => (video.paused ? video.play().catch(() => {}) : video.pause()));
+  for (const button of buttons) {
+    button.addEventListener("click", () => {
+      video.currentTime = +button.dataset.start;
+      video.play().catch(() => {});
+    });
+  }
+
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) video.pause();
+  if (video.paused) film.classList.add("paused");
+  paint();
 
   for (const button of document.querySelectorAll(".copy")) {
     button.addEventListener("click", async () => {

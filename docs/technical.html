@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moodboard technical notes</title>
+<meta name="description" content="How Moodboard runs your Next.js components, how Claude Code connects to it over MCP, and how to build it from source.">
+<meta name="theme-color" content="#f3f0e8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161618'/%3E%3Cg fill='%23e9e4d6'%3E%3Crect x='5' y='6' width='6' height='9' rx='1.5'/%3E%3Crect x='5' y='17' width='6' height='9' rx='1.5'/%3E%3Crect x='13' y='6' width='6' height='6' rx='1.5'/%3E%3Crect x='13' y='14' width='6' height='12' rx='1.5'/%3E%3Crect x='21' y='6' width='6' height='11' rx='1.5'/%3E%3Crect x='21' y='19' width='6' height='7' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="container nav">
+  <a class="brand" href="./" aria-label="Moodboard home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect class="mark-tile" width="32" height="32" rx="7"/><g class="mark-cell"><rect x="5" y="6" width="6" height="9" rx="1.5"/><rect x="5" y="17" width="6" height="9" rx="1.5"/><rect x="13" y="6" width="6" height="6" rx="1.5"/><rect x="13" y="14" width="6" height="12" rx="1.5"/><rect x="21" y="6" width="6" height="11" rx="1.5"/><rect x="21" y="19" width="6" height="7" rx="1.5"/></g></svg>
+    Moodboard
+  </a>
+  <nav aria-label="Site">
+    <ul>
+      <li><a href="technical.html" aria-current="page">Technical</a></li>
+      <li><a href="privacy.html">Privacy</a></li>
+      <li><a href="https://github.com/shariqmalik10/moodboard">GitHub</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main class="container doc">
+  <h1>How Moodboard works</h1>
+  <p class="lead">What it is for, how it runs your code, how Claude Code talks to it, and how to build it yourself.</p>
+
+  <h2>Why it exists</h2>
+  <p>Interfaces get tuned by eye. A radius, a duration or a font size is right when it looks right next to everything else, and that is hard to judge one component at a time in a browser tab.</p>
+  <p>Moodboard puts every component of a project on one wall, running, so you can compare them side by side. When something is off, you move a dial while you watch it, and the dial writes the new value into your source. The tuned version and the built version are the same file, so nothing has to be copied back by hand.</p>
+
+  <h2>How it runs your project</h2>
+  <ul>
+    <li>The app is native Swift. Each live tile is a web view, and at most 12 run at once. The rest show stills.</li>
+    <li>Connecting a project starts a Vite server on your Mac. It runs each exported client component on its own, inside every <code>*Provider</code> your <code>layout.tsx</code> files wrap around the page, with your Tailwind and fonts.</li>
+    <li>Props a component needs are made up from its TypeScript types, so it has something to show. These sample props never touch your files.</li>
+    <li>Every other dial is a literal in your code: a Tailwind class, an inline style or a value in a stylesheet. Moving it rewrites that one literal, and the project’s own hot reload redraws the tile, usually in under 200 ms.</li>
+    <li>A component that throws or draws nothing stays off the wall, and the app says why.</li>
+  </ul>
+
+  <h2>Connect a project</h2>
+  <p>Drag the project’s folder onto the wall, choose <strong>File &gt; Connect Next.js Project…</strong>, or ask Claude Code to connect it. The folder can be the app, a folder inside it, or a monorepo. A monorepo with several apps asks which one. The project needs its packages installed and Node 20.19 or newer.</p>
+
+  <h2>Claude Code</h2>
+  <p>Moodboard is also an MCP server. The welcome sheet can add it, or run this once:</p>
+  <pre><code>claude mcp add -s user moodboard -- ~/Applications/Moodboard.app/Contents/MacOS/Moodboard --mcp</code></pre>
+  <p>Then, in Claude Code, ask it to &ldquo;connect this project to moodboard&rdquo;, or ask for &ldquo;the component open on my wall&rdquo;. If the wall is closed, the first call opens it.</p>
+  <h3>Tools</h3>
+  <dl>
+    <dt><code>connect_project</code></dt><dd>Connects a project, by default the folder Claude Code is in, and reports what joined.</dd>
+    <dt><code>list_projects</code>, <code>disconnect_project</code></dt><dd>Show or remove connected projects. Files stay as they are.</dd>
+    <dt><code>list_components</code>, <code>status</code></dt><dd>What is on the wall, what is open, and what is tuned, noted or built.</dd>
+    <dt><code>get_component</code></dt><dd>A component’s brief: your note, the tuned values, and the code with the tune applied.</dd>
+    <dt><code>open_component</code>, <code>set_dials</code></dt><dd>Open a component and set its dials. On a project component this writes the file.</dd>
+    <dt><code>set_note</code>, <code>mark_built</code></dt><dd>Leave a note, or record that the code now matches the tune.</dd>
+    <dt><code>import_from_paper</code></dt><dd>Brings a frame from the Paper design app onto the wall to tune before it is code.</dd>
+  </dl>
+  <h3>Prompts</h3>
+  <p><code>connect</code>, <code>implement_component</code>, <code>build_tuned</code>, <code>apply_notes</code> and <code>design_in_paper</code>. In Claude Code, type <code>/mcp__moodboard__</code> to see them.</p>
+
+  <h2>Build from source</h2>
+  <p>Needs Xcode and Node 20.19 or newer, and works on Intel Macs too.</p>
+  <pre><code>git clone https://github.com/shariqmalik10/moodboard.git
+cd moodboard &amp;&amp; scripts/build.sh</code></pre>
+  <p>Run <code>npm run typecheck</code> and <code>npm test</code> to check the web parts. The <a href="https://github.com/shariqmalik10/moodboard#readme">README</a> has the code map, the Xcode tests and the known limits.</p>
+</main>
+
+<footer class="container foot">
+  <span>MIT licensed</span>
+  <span><a href="./">Back to Moodboard</a></span>
+</footer>
+</body>
+</html>
