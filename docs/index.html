@@ -20,7 +20,9 @@
 <meta name="theme-color" content="#121214" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161618'/%3E%3Cg fill='%23e9e4d6'%3E%3Crect x='5' y='6' width='6' height='9' rx='1.5'/%3E%3Crect x='5' y='17' width='6' height='9' rx='1.5'/%3E%3Crect x='13' y='6' width='6' height='6' rx='1.5'/%3E%3Crect x='13' y='14' width='6' height='12' rx='1.5'/%3E%3Crect x='21' y='6' width='6' height='11' rx='1.5'/%3E%3Crect x='21' y='19' width='6' height='7' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preload" as="image" href="media/poster.jpg" fetchpriority="high">
+<link rel="preload" as="font" type="font/woff2" href="fonts/GeistSerifVF.woff2" crossorigin>
 <link rel="stylesheet" href="site.css">
+<script>document.documentElement.classList.add("js")</script>
 </head>
 <body>
 <header class="container nav">
@@ -37,15 +39,30 @@
   </nav>
 </header>
 
-<main class="container hero">
-  <div class="pitch">
+<main class="container home">
+  <div class="intro">
     <h1>Your components, on a wall, running.</h1>
     <p class="lead">A Mac app that plays every component of a Next.js project live. Move a dial and it rewrites your source.</p>
-    <div class="cmd"><code id="curl">curl -fsSL https://raw.githubusercontent.com/shariqmalik10/moodboard/main/scripts/install.sh | sh</code><button class="button copy" type="button" data-copy="curl">Copy</button></div>
-    <p class="req">Apple silicon, macOS 26 or later. Node 20.19 or newer to connect a project. Free and open source. Or download <a href="https://github.com/shariqmalik10/moodboard/releases/latest/download/Moodboard.zip">the zip</a>.</p>
+    <div class="act">
+      <div class="get">
+        <a class="download" href="https://github.com/shariqmalik10/moodboard/releases/latest/download/Moodboard.zip" download>
+          <span class="icon" aria-hidden="true">
+            <svg class="arrow" viewBox="0 0 16 16"><path d="M8 2.5v8m0 0L4.5 7M8 10.5 11.5 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span class="tray"></span>
+            <svg class="tick" viewBox="0 0 16 16"><path d="m3.5 8.5 3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="labels" aria-live="polite"><span>Download for Mac</span><span>Starting download</span><span>Check your Downloads</span></span>
+        </a>
+      </div>
+      <div class="notes">
+        <p class="req">Apple silicon, macOS 26 or later. Node 20.19 or newer to connect a project. Free and open source.</p>
+        <p class="hint" role="status">The app isn’t notarized, so macOS stops the first launch. Open System Settings, then Privacy &amp; Security, and click Open Anyway.</p>
+      </div>
+    </div>
   </div>
 
   <figure class="film">
+    <div class="frame">
     <div class="screen">
       <video id="demo" width="1920" height="1200" autoplay muted loop playsinline preload="auto" poster="media/poster.jpg" aria-label="Moodboard demo film, no sound">
         <source src="media/demo.mp4" type="video/mp4">
@@ -69,6 +86,7 @@
       </div>
       <p class="caption" aria-hidden="true">Try the demo, or connect a Next.js project.</p>
     </figcaption>
+    </div>
   </figure>
 </main>
 
@@ -142,19 +160,24 @@
   if (video.paused) film.classList.add("paused");
   paint();
 
-  for (const button of document.querySelectorAll(".copy")) {
-    button.addEventListener("click", async () => {
-      const code = document.getElementById(button.dataset.copy);
-      try {
-        await navigator.clipboard.writeText(code.textContent);
-        button.textContent = "Copied";
-      } catch {
-        getSelection().selectAllChildren(code);
-        button.textContent = "Selected";
-      }
-      setTimeout(() => (button.textContent = "Copy"), 1600);
-    });
-  }
+  // The download starts from the link itself; the button only shows that it went, then says where to look.
+  const download = document.querySelector(".download");
+  const hint = document.querySelector(".hint");
+  let timers = [];
+  download.addEventListener("click", () => {
+    timers.forEach(clearTimeout);
+    download.classList.remove("done");
+    download.classList.add("going");
+    download.dataset.step = "1";
+    timers = [
+      setTimeout(() => {
+        download.classList.remove("going");
+        download.classList.add("done");
+        download.dataset.step = "2";
+        hint.parentElement.classList.add("swap");
+      }, 1800),
+    ];
+  });
 })();
 </script>
 </body>

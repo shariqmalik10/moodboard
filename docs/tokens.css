@@ -13,7 +13,7 @@
   --color-rule: oklch(87.5% 0.018 87);
   --color-accent: oklch(47% 0.075 150); --color-accent-ink: oklch(98.5% 0.006 150); --color-focus: oklch(47% 0.075 150);
   --color-stage: oklch(18% 0.004 285); --color-film-ring: oklch(22% 0.008 80 / 0.12); --color-film-shadow: oklch(22% 0.008 80 / 0.4);
-  --font-display: "New York", ui-serif, "Iowan Old Style", Georgia, serif; --font-body: -apple-system, ui-sans-serif, system-ui, sans-serif; --font-outlier: var(--font-body);
+  --font-display: "Geist Serif", ui-serif, Georgia, serif; --font-body: "Geist Serif", ui-serif, Georgia, serif; --font-outlier: var(--font-body);
   --color-mark: oklch(92.5% 0.02 90);
   --font-code: ui-monospace, "SF Mono", Menlo, monospace;
   color-scheme: light dark;

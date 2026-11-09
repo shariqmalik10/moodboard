@@ -1,56 +1,101 @@
 /* Hallmark · shape: Workbench (/), Long Document (/technical.html, /privacy.html) · genre: modern-minimal · theme: brand · redesign: full · job: try
- * paper: oklch(95.6% 0.011 88) · accent: oklch(47% 0.075 150) · display: New York · body: SF Pro · hero: Stage (/) · nav: wordmark and three quiet links · footer: one line · signature: the film's own timeline, cut into its chapters at their real lengths, tap one to jump
- * axes: light/roman-serif/chromatic-green · posture: accent on the copy button and the playing chapter · contrast: pass · fold: pass · v2.0.0 */
-/* Hallmark · pre-emit critique: P4 H5 E4 S4 R5 V3 · weakest: V, a two-column product hero is the category's habit; the chapter strip under the film is drawn from the film's real cue lengths, so it could belong to no other page */
-/* Hallmark · waive 1 · .doc h3 only, inside the technical document; h1 and h2 use New York · the Tools and Prompts subheads are run-in labels in the body face, not display heads */
-/* Hallmark · dropped https://github.com/shariqmalik10/moodboard#build-from-source · building from source now lives on technical.html, linked from the nav */
-/* Hallmark · dismissed F4 · .bar i is the playing chapter's progress fill, not a button; the copy button is the only filled control */
+ * paper: oklch(95.6% 0.011 88) · accent: oklch(47% 0.075 150) · display: Geist Serif · body: Geist Serif · hero: Stage (/), text over the film · nav: wordmark and three quiet links · footer: one line · signature: the film's own timeline, cut into its chapters at their real lengths, tap one to jump
+ * axes: light/roman-serif/chromatic-green · posture: accent on the download button and the playing chapter · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H5 E4 S4 R5 V3 · weakest: V, a product hero over its film is the category's habit; the chapter strip under the film is drawn from the film's real cue lengths, so it could belong to no other page */
+/* Hallmark · dismissed F4 · .bar i is the playing chapter's progress fill, not a button; the download button is the only filled control */
+/* Hallmark · dropped https://github.com/shariqmalik10/moodboard#build-from-source, curl · the curl command gave way to one download button at the owner's request; building from source lives on technical.html */
+/* Hallmark · dismissed F5 · .download .icon is the tray the arrow drops into during the download animation, not a decorative coin */
 @import url("./tokens.css");
 @import url("./base.css");
 
-:root { --nav-h: 72px; }
+@font-face {
+  font-family: "Geist Serif";
+  src: url("./fonts/GeistSerifVF.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root { --nav-h: 64px; --container: 1120px; }
 
 body { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: minmax(0, 1fr); }
 
 /* Chrome */
-.nav { display: flex; align-items: center; justify-content: space-between; min-height: var(--nav-h); }
-.brand { display: flex; align-items: center; gap: var(--space-sm); font-weight: 600; text-decoration: none; letter-spacing: -0.01em; }
+.nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); min-height: var(--nav-h); }
+.brand { display: flex; align-items: center; gap: var(--space-sm); font-weight: 600; font-size: var(--text-lg); text-decoration: none; letter-spacing: -0.01em; }
 .brand svg { width: 24px; height: 24px; }
 .mark-tile { fill: var(--color-stage); }
 .mark-cell { fill: var(--color-mark); }
-.nav ul { display: flex; gap: var(--space-lg); margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+.nav ul { display: flex; gap: var(--space-lg); margin: 0; padding: 0; list-style: none; }
 .nav a:not(.brand) { color: var(--color-muted); text-decoration: none; white-space: nowrap; padding-block: var(--space-sm); }
 .nav a:not(.brand):hover, .nav a[aria-current] { color: var(--color-ink); }
-.foot { display: flex; flex-wrap: wrap; gap: var(--space-2xs) var(--space-lg); justify-content: space-between; padding-block: var(--space-md) var(--space-lg); font-size: var(--text-xs); color: var(--color-muted); }
+.foot { display: flex; flex-wrap: wrap; gap: var(--space-2xs) var(--space-lg); justify-content: space-between; padding-block: var(--space-sm) var(--space-md); font-size: var(--text-sm); color: var(--color-muted); }
 
-/* Home: the hero is the page */
-.hero {
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
-  gap: var(--space-2xl);
-  align-items: center;
-  padding-block: var(--space-md) var(--space-xl);
-}
-.pitch { display: grid; gap: var(--space-lg); align-content: center; }
-.hero h1 { font-size: clamp(2.25rem, 3.4vw + 0.25rem, 3.5rem); font-weight: 500; line-height: 1.04; letter-spacing: -0.025em; }
-.pitch .lead { color: var(--color-ink-2); }
-.req { font-size: var(--text-sm); color: var(--color-muted); max-width: 44ch; }
-.req a { color: var(--color-ink); }
+/* Home: text first, the film under it, all of it inside one screen */
+.home { display: flex; flex-direction: column; gap: var(--space-lg); padding-block: var(--space-xs) var(--space-sm); min-height: 0; }
+.intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-md) var(--space-2xl); align-items: start; }
+.intro h1 { grid-column: 1 / -1; max-width: none; font-size: clamp(2rem, 2.6vw + 0.6rem, 3.25rem); font-weight: 500; line-height: 1.02; letter-spacing: -0.03em; }
+.intro .lead { font-size: var(--text-lg); line-height: 1.4; color: var(--color-ink-2); max-width: 46ch; }
+.act { display: grid; gap: var(--space-sm); justify-items: start; }
+.get { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-md); }
+.notes { display: grid; }
+.notes > p { grid-area: 1 / 1; font-size: var(--text-sm); line-height: 1.45; max-width: 46ch; }
+.req { color: var(--color-muted); }
+.hint { color: var(--color-ink-2); }
+.js .notes > p { transition: opacity var(--dur-long) var(--ease-out), transform var(--dur-long) var(--ease-out); }
+.js .hint { opacity: 0; transform: translateY(4px); }
+.js .notes.swap .req { opacity: 0; transform: translateY(-4px); }
+.js .notes.swap .hint { opacity: 1; transform: none; }
+html:not(.js) .hint { grid-area: 2 / 1; margin-top: var(--space-xs); }
 
-.cmd { display: flex; align-items: center; gap: var(--space-xs); min-width: 0; padding: var(--space-2xs) var(--space-2xs) var(--space-2xs) var(--space-sm); background: var(--color-paper-2); border: 1px solid var(--color-rule); border-radius: var(--radius-control); }
-.cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: var(--text-xs)/2 var(--font-code); scrollbar-width: none; }
-.button {
-  flex: none; min-height: 44px; padding-inline: var(--space-md);
-  font: 600 var(--text-sm)/1 var(--font-body); white-space: nowrap;
+/* The download button: the arrow drops into the tray, a fill sweeps across, the label hands over */
+.download {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: inline-flex; align-items: center; gap: var(--space-sm);
+  min-height: 48px; padding: 0 var(--space-lg) 0 var(--space-xs);
+  font-weight: 600; font-size: var(--text-md); text-decoration: none; white-space: nowrap;
   color: var(--color-accent-ink); background: var(--color-accent);
-  border: 0; border-radius: calc(var(--radius-control) - 4px); cursor: pointer;
+  border-radius: var(--radius-pill);
   transition: transform var(--dur-micro) var(--ease-out), background-color var(--dur-short) var(--ease-out);
 }
-.button:hover { background: color-mix(in oklab, var(--color-accent) 88%, var(--color-ink)); }
-.button:active { transform: scale(0.96); }
-.button:disabled { opacity: 0.5; cursor: not-allowed; }
+.download:hover { background: color-mix(in oklab, var(--color-accent) 88%, var(--color-ink)); }
+.download:active { transform: scale(0.97); }
+.download::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: color-mix(in oklab, var(--color-accent-ink) 18%, transparent);
+  transform: scaleX(0); transform-origin: left;
+}
+.download.going::before { animation: sweep 1400ms var(--ease-in-out) forwards; }
+.download .icon {
+  position: relative; flex: none; width: 32px; height: 32px; display: grid; place-items: center; overflow: hidden;
+  border-radius: var(--radius-pill); background: color-mix(in oklab, var(--color-accent-ink) 16%, transparent);
+}
+.download .icon svg { width: 16px; height: 16px; }
+.download .arrow { transition: transform var(--dur-long) var(--ease-in), opacity var(--dur-short) var(--ease-in); }
+.download .tray { position: absolute; bottom: 7px; width: 14px; height: 2px; border-radius: var(--radius-pill); background: currentColor; opacity: 0.7; }
+.download .tick { display: none; position: absolute; transition: transform var(--dur-short) var(--ease-out), opacity var(--dur-short) var(--ease-out); }
+.download.going .arrow { animation: drop 900ms var(--ease-in-out) 2; }
+.js .download.done .arrow { opacity: 0; transform: translateY(14px); animation: none; }
+.download.done .tray { opacity: 0; }
+.js .download .tick { display: block; opacity: 0; transform: scale(0.6); }
+.download.done .tick { opacity: 1; transform: none; }
+.labels { display: grid; }
+.labels span { grid-area: 1 / 1; transition: transform var(--dur-short) var(--ease-out), opacity var(--dur-short) var(--ease-out); }
+.labels span:not(:first-child) { display: none; }
+.js .labels span:not(:first-child) { display: block; opacity: 0; transform: translateY(100%); }
+.js .download[data-step="1"] .labels span:nth-child(1), .js .download[data-step="2"] .labels span:nth-child(1), .js .download[data-step="2"] .labels span:nth-child(2) { opacity: 0; transform: translateY(-100%); }
+.download[data-step="1"] .labels span:nth-child(2), .download[data-step="2"] .labels span:nth-child(3) { opacity: 1; transform: none; }
+@keyframes drop {
+  0% { transform: translateY(0); opacity: 1; }
+  45% { transform: translateY(16px); opacity: 0; }
+  46% { transform: translateY(-16px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes sweep { to { transform: scaleX(1); } }
 
-.film { margin: 0; display: grid; gap: var(--space-sm); min-width: 0; }
+/* The film fills what the text leaves, and keeps its shape */
+.film { margin: 0; flex: 1 1 auto; min-height: 0; display: grid; justify-items: center; align-content: start; }
+.frame { width: 100%; display: grid; gap: var(--space-sm); }
 .screen {
   aspect-ratio: 16 / 10; overflow: hidden; border-radius: var(--radius-card);
   background: var(--color-stage);
@@ -73,7 +118,7 @@ body { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gri
 .toggle .play, .paused .toggle .pause { display: none; }
 .paused .toggle .play { display: block; }
 .chapters { flex: 1; min-width: 0; display: flex; gap: var(--space-2xs); margin: 0; padding: 0; list-style: none; }
-.chapters li { flex: var(--len, 1) 1 0; min-width: 0; }
+.chapters li { flex: var(--len, 1) 1 0; min-width: min-content; }
 .chapters button {
   width: 100%; min-height: 44px; display: grid; align-content: start; gap: var(--space-xs);
   padding: var(--space-xs) 0 0; margin: 0; background: none; border: 0; cursor: pointer;
@@ -83,11 +128,18 @@ body { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gri
 .chapters button:hover, .chapters button[aria-current] { color: var(--color-ink); }
 .chapters button:active .bar { transform: scaleY(1.6); }
 .chapters button:disabled { cursor: not-allowed; }
-.chapters .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chapters .label { white-space: nowrap; }
 .bar { display: block; height: 4px; border-radius: var(--radius-pill); background: var(--color-rule); overflow: hidden; transition: transform var(--dur-micro) var(--ease-out); }
 .bar i { display: block; height: 100%; background: var(--color-ink); transform-origin: left; transform: scaleX(var(--p, 0)); }
 .chapters button[aria-current] .bar i { background: var(--color-accent); }
-.caption { margin: 0; padding-left: calc(44px + var(--space-sm)); min-height: 1.5em; font: 400 var(--text-md)/1.4 var(--font-display); color: var(--color-ink-2); }
+.caption { margin: 0; padding-left: calc(44px + var(--space-sm)); min-height: 1.4em; font-size: var(--text-md); line-height: 1.4; color: var(--color-ink-2); }
+
+/* On a screen tall enough, the page is exactly one screen and the film takes what is left */
+@media (min-height: 34rem) {
+  body:has(.home) { height: 100svh; }
+  .film { container-type: size; }
+  .frame { width: min(100cqw, (100cqh - 92px) * 1.6); }
+}
 
 /* Long documents */
 .doc { padding-block: var(--space-xl) var(--space-3xl); }
@@ -95,10 +147,10 @@ body { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gri
 .doc h1 { font-size: var(--text-display-s); font-weight: 500; margin-bottom: var(--space-md); }
 .doc .lead { color: var(--color-ink-2); margin-bottom: var(--space-2xl); }
 .doc h2 { font-size: var(--text-2xl); font-weight: 500; margin: var(--space-2xl) 0 var(--space-sm); }
-.doc h3 { font-family: var(--font-body); font-size: var(--text-md); font-weight: 600; letter-spacing: 0; margin: var(--space-lg) 0 var(--space-2xs); }
+.doc h3 { font-size: var(--text-lg); font-weight: 600; letter-spacing: 0; margin: var(--space-lg) 0 var(--space-2xs); }
 .doc p, .doc ul, .doc ol { margin: 0 0 var(--space-md); color: var(--color-ink-2); }
 .doc li { margin-bottom: var(--space-2xs); }
-.doc code { font: 0.9em var(--font-code); color: var(--color-ink); }
+.doc code { font: 0.85em var(--font-code); color: var(--color-ink); }
 .doc pre { margin: 0 0 var(--space-md); padding: var(--space-sm) var(--space-md); overflow-x: auto; background: var(--color-paper-2); border: 1px solid var(--color-rule); border-radius: var(--radius-control); }
 .doc pre code { font-size: var(--text-xs); line-height: 1.7; }
 .doc dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-xs) var(--space-lg); margin: 0 0 var(--space-md); }
@@ -106,13 +158,24 @@ body { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gri
 .doc dd { margin: 0; color: var(--color-ink-2); }
 .doc a { color: var(--color-ink); }
 
-@media (max-width: 60rem) {
-  .hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); padding-top: var(--space-xs); }
+@media (max-width: 52rem) {
+  .intro { grid-template-columns: minmax(0, 1fr); }
   .chapters .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .chapters button { padding-top: 20px; }
 }
 @media (max-width: 40rem) {
-  .nav ul { gap: var(--space-md); }
+  :root { --nav-h: 56px; }
+  .home { gap: var(--space-md); }
+  .intro .lead { font-size: var(--text-md); }
+  .nav { gap: var(--space-xs); }
+  .nav ul { gap: var(--space-sm); font-size: var(--text-sm); }
+  .brand svg { width: 20px; height: 20px; }
+  .brand { font-size: var(--text-md); gap: var(--space-xs); }
+  .foot span + span { display: none; }
   .doc dl { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .doc dd { margin-bottom: var(--space-sm); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .download.going::before, .download.going .arrow { animation: none; }
+  .download::before { transform: scaleX(1); opacity: 0; }
 }
