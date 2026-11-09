@@ -33,13 +33,13 @@ body { min-height: 100svh; display: grid; grid-template-rows: auto 1fr auto; gri
 
 /* Home: text first, the film under it, all of it inside one screen */
 .home { display: flex; flex-direction: column; gap: var(--space-lg); padding-block: var(--space-xs) var(--space-sm); min-height: 0; }
-.intro { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-md) var(--space-2xl); align-items: start; }
-.intro h1 { grid-column: 1 / -1; max-width: none; font-size: clamp(2rem, 2.6vw + 0.6rem, 3.25rem); font-weight: 500; line-height: 1.02; letter-spacing: -0.03em; }
-.intro .lead { font-size: var(--text-lg); line-height: 1.4; color: var(--color-ink-2); max-width: 46ch; }
+.intro { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-sm) var(--space-2xl); align-items: center; }
+.intro h1 { grid-column: 1 / -1; max-width: none; font-size: clamp(2rem, 5.6cqi, 3.25rem); font-weight: 500; line-height: 1.02; letter-spacing: -0.03em; }
+.intro .lead { font-size: clamp(var(--text-md), 2.4cqi, var(--text-lg)); line-height: 1.4; color: var(--color-ink-2); max-width: 46ch; }
 .act { display: grid; gap: var(--space-sm); justify-items: start; }
 .get { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-md); }
-.notes { display: grid; }
-.notes > p { grid-area: 1 / 1; font-size: var(--text-sm); line-height: 1.45; max-width: 46ch; }
+.notes { grid-column: 1 / -1; display: grid; }
+.notes > p { grid-area: 1 / 1; font-size: var(--text-sm); line-height: 1.45; max-width: 72ch; }
 .req { color: var(--color-muted); }
 .hint { color: var(--color-ink-2); }
 .js .notes > p { transition: opacity var(--dur-long) var(--ease-out), transform var(--dur-long) var(--ease-out); }
@@ -135,10 +135,10 @@ html:not(.js) .hint { grid-area: 2 / 1; margin-top: var(--space-xs); }
 .caption { margin: 0; padding-left: calc(44px + var(--space-sm)); min-height: 1.4em; font-size: var(--text-md); line-height: 1.4; color: var(--color-ink-2); }
 
 /* On a screen tall enough, the page is exactly one screen and the film takes what is left */
-@media (min-height: 34rem) {
-  body:has(.home) { height: 100svh; }
-  .film { container-type: size; }
-  .frame { width: min(100cqw, (100cqh - 92px) * 1.6); }
+/* The film spans the text column edge to edge. On a wide screen the column narrows with the window's height,
+   so the text, the film and its chapters still fit one screen; on a phone the film takes the full width. */
+@media (min-width: 52rem) {
+  :root:has(.home) { --container: clamp(calc(480px + 2 * var(--gutter)), calc((100svh - 440px) * 1.6 + 2 * var(--gutter)), 1120px); }
 }
 
 /* Long documents */
