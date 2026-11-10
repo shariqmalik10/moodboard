@@ -11,12 +11,18 @@ final class LiveStage {
     case failed(String)
   }
 
+  /// What the stage's script should be doing. A page that loads again is told this once it's ready.
+  enum Playback {
+    case held
+    case looping
+    /// A person is using this stage, so its script stays stopped until it goes back to the wall.
+    case handsOn
+  }
+
   let web: StageWebView
   private(set) var itemId: String?
   private(set) var phase: Phase = .idle
-  private(set) var isRunning = false
-  /// A person is using this stage, so its script stays stopped until it goes back to the wall.
-  private(set) var isHandsOn = false
+  private(set) var playback = Playback.held
   var lastUsed = 0
   /// Whoever is showing this stage. A stage without one is free to be reused.
   weak var holder: AnyObject?
@@ -38,24 +44,28 @@ final class LiveStage {
     guard itemId != id else { return }
     itemId = id
     phase = .loading
-    isRunning = false
-    isHandsOn = false
+    playback = .held
     web.load(URLRequest(url: Self.url(for: id, mode: .held)))
   }
 
   func reload() {
     guard let id = itemId else { return }
-    let hadHands = isHandsOn
+    let kept = playback
     itemId = nil
     load(id)
-    isHandsOn = hadHands
+    playback = kept
   }
+
+  var isRunning: Bool { playback == .looping }
 
   func markReady() {
     phase = .ready
-    if isHandsOn { send(.drive) }
-    // Hot reload can load the page again by itself, and the new page waits to be told it's on show.
-    else if isRunning { send(.run(true)) }
+    // Hot reload can load the page again by itself, and the new page waits to be told what to do.
+    switch playback {
+    case .held: break
+    case .looping: send(.run(true))
+    case .handsOn: send(.drive)
+    }
     onReady?()
   }
   func markFailed(_ message: String) { phase = .failed(message) }
@@ -64,15 +74,17 @@ final class LiveStage {
     web.callAsyncJavaScript("window.__host && window.__host(message)", arguments: ["message": command.json], in: nil, in: .page, completionHandler: nil)
   }
 
+  /// Loops the script while the tile is fully on show. A stage in a person's hands keeps still.
   func setRunning(_ running: Bool) {
-    guard phase == .ready, running != isRunning else { return }
-    isRunning = running
-    send(.run(running))
+    let next: Playback = running ? .looping : .held
+    guard playback != .handsOn, playback != next else { return }
+    playback = next
+    if phase == .ready { send(.run(running)) }
   }
 
   /// Hands the component to the person, exactly as it stands. A stage still loading does this once it's ready.
   func handOver() {
-    isHandsOn = true
+    playback = .handsOn
     if phase == .ready { send(.drive) }
   }
 
@@ -86,10 +98,8 @@ final class LiveStage {
   }
 
   func backToLoop() {
-    isHandsOn = false
-    guard phase == .ready else { return }
-    isRunning = true
-    send(.replay)
+    playback = .looping
+    if phase == .ready { send(.replay) }
   }
 
   func tune(saved: JSON) {
@@ -156,7 +166,7 @@ final class LivePool {
   }
 
   func release(_ stage: LiveStage) {
-    if stage.isHandsOn { stage.backToLoop() }
+    if stage.playback == .handsOn { stage.backToLoop() }
     stage.setRunning(false)
     stage.holder = nil
     stage.onReady = nil
