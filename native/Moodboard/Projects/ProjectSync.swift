@@ -31,8 +31,10 @@ private struct ProjectRun {
 
   var phase: Phase
   var restarts = 0
-  /// How far the wall is through adding the components the server last found.
-  var adding: (done: Int, total: Int)?
+  /// New components on their way to the wall: found by the server, and not yet measured or skipped.
+  var incoming: Set<String> = []
+  /// How many have landed since `incoming` was last empty.
+  var landed = 0
   /// Set at connect, so the wall turns to the new project once it has something to show.
   var revealing = false
 
@@ -136,7 +138,7 @@ final class ProjectSync {
     guard let run = runs[slug] else { return false }
     if run.problem != nil { return true }
     guard case .listening(_, scanned: true) = run.phase else { return false }
-    return run.adding == nil && !measurer.isBusy(slug: slug)
+    return run.incoming.isEmpty && !measurer.isBusy(slug: slug)
   }
 
   /// Said while a project is still on its way, such as macOS waiting on the person to allow its folder.
@@ -225,7 +227,6 @@ final class ProjectSync {
     guard let project = ProjectCatalog.project(slug: slug) else { return }
     let rows = Dictionary(project.components.map { ($0.id, $0) }) { first, _ in first }
     let skipped = Dictionary(project.skipped.map { ($0.id, $0) }) { first, _ in first }
-    var added = 0
     var edited: [String] = []
     for item in items {
       // A quick undo lands back on the hash the row still holds, and it's an edit all the same.
@@ -236,15 +237,13 @@ final class ProjectSync {
         if row.hash != item.hash || measurer.isQueued(item.id) { measurer.enqueue(.init(found: item, slug: slug), first: true) }
       } else if skipped[item.id]?.hash != item.hash {
         measurer.enqueue(.init(found: item, slug: slug), first: false)
-        added += 1
+        runs[slug]?.incoming.insert(item.id)
       }
-    }
-    if added > 0 {
-      let before = runs[slug]?.adding
-      runs[slug]?.adding = (done: before?.done ?? 0, total: (before?.total ?? 0) + added)
     }
 
     let present = Set(items.map(\.id))
+    runs[slug]?.incoming.formIntersection(present)
+    finishAdding(slug)
     let gone = rows.keys.filter { !present.contains($0) }
     if !gone.isEmpty { drop(Set(gone), slug: slug) }
     measurer.removeQueued { $0.slug == slug && !present.contains($0.found.id) }
@@ -289,22 +288,27 @@ final class ProjectSync {
     let id = job.found.id
     // A tile already on the wall keeps its last good look while its file is mid-edit.
     if ProjectCatalog.contains(id) { return }
-    tick(job.slug)
     ProjectCatalog.edit(slug: job.slug) { project in
       project.skipped.removeAll { $0.id == id }
       project.skipped.append(SkippedComponent(id: id, title: job.found.title, file: job.found.file, hash: job.found.hash, reason: reason))
     }
+    land(id, slug: job.slug)
     refreshLines()
   }
 
-  private func tick(_ slug: String) {
-    guard let current = runs[slug]?.adding else { return }
-    let done = current.done + 1
-    runs[slug]?.adding = done >= current.total ? nil : (done: done, total: current.total)
-    if done >= current.total, let project = ProjectCatalog.project(slug: slug) {
-      let hidden = project.skipped.isEmpty ? "" : " \(project.skipped.count) can't stand alone. The connect panel says why."
-      app.chrome?.say("\(project.name) has \(project.components.count) on the wall.\(hidden)")
-    }
+  private func land(_ id: String, slug: String) {
+    guard runs[slug]?.incoming.remove(id) != nil else { return }
+    runs[slug]?.landed += 1
+    finishAdding(slug)
+  }
+
+  /// Says how the wall stands once the last new component has landed.
+  private func finishAdding(_ slug: String) {
+    guard let run = runs[slug], run.incoming.isEmpty, run.landed > 0 else { return }
+    runs[slug]?.landed = 0
+    guard let project = ProjectCatalog.project(slug: slug) else { return }
+    let hidden = project.skipped.isEmpty ? "" : " \(project.skipped.count) can't stand alone. The connect panel says why."
+    app.chrome?.say("\(project.name) has \(project.components.count) on the wall.\(hidden)")
   }
 
   private func measured(_ job: ProjectMeasurer.Job, width: Double, height: Double, ground: String) {
@@ -321,7 +325,7 @@ final class ProjectSync {
     }
     if existing == nil {
       arrive(row, slug: job.slug)
-      tick(job.slug)
+      land(id, slug: job.slug)
     } else {
       if existing?.viewport != row.viewport || existing?.ground != row.ground { app.store?.refresh() }
       app.plates?.invalidate(id)
@@ -334,7 +338,7 @@ final class ProjectSync {
   private func arrive(_ row: ProjectComponent, slug: String) {
     guard let store = app.store, let canvas = app.canvas else { return }
     if store.isHidden(row.id) { return }
-    if runs[slug]?.adding != nil {
+    if runs[slug]?.incoming.isEmpty == false {
       store.add(row.id)
       if runs[slug]?.revealing == true {
         runs[slug]?.revealing = false
@@ -352,7 +356,7 @@ final class ProjectSync {
   private func refreshLines() {
     state.lines = ProjectCatalog.projects.map { project in
       let run = runs[project.slug]
-      let adding = run?.adding.map { "Adding \($0.done) of \($0.total)…" }
+      let adding = run.flatMap { $0.incoming.isEmpty ? nil : "Adding \($0.landed) of \($0.landed + $0.incoming.count)…" }
       var waking: String?
       if case .starting(_, let slow)? = run?.phase { waking = slow ? "Still starting. If macOS asks about this folder, choose Allow." : "Starting…" }
       return ProjectLine(slug: project.slug, name: project.name, root: project.root, shown: project.components.count, skipped: project.skipped, progress: adding ?? waking, problem: run?.problem)
