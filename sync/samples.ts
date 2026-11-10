@@ -51,6 +51,11 @@ export class Samples {
     this.service = ts.createLanguageService(host);
   }
 
+  /** Builds the type checker's view of the project now, so the first component asked for doesn't wait on it. */
+  warm() {
+    this.service.getProgram();
+  }
+
   touched(file: string) {
     this.versions.set(file, (this.versions.get(file) ?? 0) + 1);
   }
