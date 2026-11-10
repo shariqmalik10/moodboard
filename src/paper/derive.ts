@@ -34,6 +34,16 @@ const COLOR_LITERAL = /^(#[\da-f]{3,8}|rgba?\(.+\)|hsla?\(.+\)|oklch\(.+\)|color
 const PLAIN = new Set(["none", "transparent", "currentColor", "currentcolor", "inherit"]);
 const MAX = { colors: 14, sizes: 8, weights: 4, spaces: 8, radii: 4, texts: 12 };
 
+type Scale = "size" | "weight" | "space" | "radius";
+
+/** The number dials a design gets, in the order the panel shows them. */
+const SCALES: { scale: Scale; folder: string; limit: number; largestFirst?: boolean; prefix: string; unit: string; key: (value: string) => string; range: (n: number) => number[] }[] = [
+  { scale: "size", folder: "Type", limit: MAX.sizes, largestFirst: true, prefix: "t", unit: "px", key: (value) => `${value} px`, range: (n) => [n, Math.max(6, Math.round(n * 0.5)), Math.round(n * 2), 1] },
+  { scale: "weight", folder: "Type", limit: MAX.weights, prefix: "w", unit: "", key: (value) => `Weight ${value}`, range: (n) => [n, 100, 900, 100] },
+  { scale: "space", folder: "Spacing", limit: MAX.spaces, prefix: "s", unit: "px", key: (value) => `${value} px`, range: (n) => [n, 0, Math.max(n * 3, 48), 1] },
+  { scale: "radius", folder: "Radius", limit: MAX.radii, prefix: "r", unit: "px", key: (value) => `${value} px`, range: (n) => [n, 0, Math.max(n * 3, 40), 1] },
+];
+
 const slug = (text: string) => text.replace(/^--/, "").replace(/[^\w-]+/g, "-");
 const tokenOf = (value: string) => /^var\((--[\w-]+)(?:,.*)?\)$/.exec(value)?.[1];
 
@@ -87,22 +97,19 @@ export function derive(tree: PaperNode, tokens: PaperToken[]): Derived {
   };
 
   const colours: string[] = [];
-  const sizes: string[] = [];
-  const weights: string[] = [];
-  const spaces: string[] = [];
-  const radii: string[] = [];
+  const found: Record<Scale, string[]> = { size: [], weight: [], space: [], radius: [] };
   const texts: string[] = [];
   const families = new Set<string>();
 
   walk(tree, (node) => {
     for (const [key, value] of [...Object.entries(node.style), ...Object.entries(node.attrs)]) {
       if (typeof value === "string" && COLOR_KEYS.has(key) && !PLAIN.has(value) && (tokenOf(value) || COLOR_LITERAL.test(value))) colours.push(value);
-      if (key === "fontSize" && px(value) !== null) sizes.push(String(px(value)));
-      if (key === "fontWeight" && !Number.isNaN(Number(value))) weights.push(String(value));
+      if (key === "fontSize" && px(value) !== null) found.size.push(String(px(value)));
+      if (key === "fontWeight" && !Number.isNaN(Number(value))) found.weight.push(String(value));
       if (SPACE_KEYS.has(key) && typeof value === "string") {
-        for (const part of value.split(/\s+/)) if (px(part) !== null && px(part) !== 0) spaces.push(String(px(part)));
+        for (const part of value.split(/\s+/)) if (px(part) !== null && px(part) !== 0) found.space.push(String(px(part)));
       }
-      if (key === "borderRadius" && px(value) !== null && px(value) !== 0) radii.push(String(px(value)));
+      if (key === "borderRadius" && px(value) !== null && px(value) !== 0) found.radius.push(String(px(value)));
       if (key === "fontFamily") {
         for (const family of resolve(String(value)).split(",")) {
           const name = family.trim().replace(/^["']|["']$/g, "");
@@ -118,10 +125,7 @@ export function derive(tree: PaperNode, tokens: PaperToken[]): Derived {
   const config: Record<string, unknown> = {};
   const bindings: Binding[] = [];
   const colorVar = new Map<string, string>();
-  const sizeVar = new Map<string, string>();
-  const weightVar = new Map<string, string>();
-  const spaceVar = new Map<string, string>();
-  const radiusVar = new Map<string, string>();
+  const varOf: Record<Scale, Map<string, string>> = { size: new Map(), weight: new Map(), space: new Map(), radius: new Map() };
 
   const folder = (name: string) => (config[name] ??= {}) as Record<string, unknown>;
 
@@ -134,36 +138,15 @@ export function derive(tree: PaperNode, tokens: PaperToken[]): Derived {
     bindings.push({ folder: "Colours", key, cssVar, unit: "" });
     colorVar.set(value, `var(${cssVar})`);
   }
-  for (const value of ranked(sizes, MAX.sizes).sort((a, b) => Number(b) - Number(a))) {
-    const n = Number(value);
-    const key = `${value} px`;
-    const cssVar = `--paper-t-${slug(value)}`;
-    folder("Type")[key] = [n, Math.max(6, Math.round(n * 0.5)), Math.round(n * 2), 1];
-    bindings.push({ folder: "Type", key, cssVar, unit: "px" });
-    sizeVar.set(value, `var(${cssVar})`);
-  }
-  for (const value of ranked(weights, MAX.weights).sort((a, b) => Number(a) - Number(b))) {
-    const key = `Weight ${value}`;
-    const cssVar = `--paper-w-${value}`;
-    folder("Type")[key] = [Number(value), 100, 900, 100];
-    bindings.push({ folder: "Type", key, cssVar, unit: "" });
-    weightVar.set(value, `var(${cssVar})`);
-  }
-  for (const value of ranked(spaces, MAX.spaces).sort((a, b) => Number(a) - Number(b))) {
-    const n = Number(value);
-    const key = `${value} px`;
-    const cssVar = `--paper-s-${slug(value)}`;
-    folder("Spacing")[key] = [n, 0, Math.max(n * 3, 48), 1];
-    bindings.push({ folder: "Spacing", key, cssVar, unit: "px" });
-    spaceVar.set(value, `var(${cssVar})`);
-  }
-  for (const value of ranked(radii, MAX.radii).sort((a, b) => Number(a) - Number(b))) {
-    const n = Number(value);
-    const key = `${value} px`;
-    const cssVar = `--paper-r-${slug(value)}`;
-    folder("Radius")[key] = [n, 0, Math.max(n * 3, 40), 1];
-    bindings.push({ folder: "Radius", key, cssVar, unit: "px" });
-    radiusVar.set(value, `var(${cssVar})`);
+  for (const { scale, folder: name, limit, largestFirst, prefix, unit, key: keyOf, range } of SCALES) {
+    const order = largestFirst ? -1 : 1;
+    for (const value of ranked(found[scale], limit).sort((a, b) => order * (Number(a) - Number(b)))) {
+      const key = keyOf(value);
+      const cssVar = `--paper-${prefix}-${slug(value)}`;
+      folder(name)[key] = range(Number(value));
+      bindings.push({ folder: name, key, cssVar, unit });
+      varOf[scale].set(value, `var(${cssVar})`);
+    }
   }
   if (texts.length > 0) {
     const words = folder("Text");
@@ -177,11 +160,11 @@ export function derive(tree: PaperNode, tokens: PaperToken[]): Derived {
     const style: Record<string, PaperValue> = {};
     for (const [key, value] of Object.entries(node.style)) {
       const number = px(value);
-      if (key === "fontSize" && number !== null && sizeVar.has(String(number))) style[key] = sizeVar.get(String(number)) as string;
-      else if (key === "fontWeight" && weightVar.has(String(value))) style[key] = weightVar.get(String(value)) as string;
-      else if (key === "borderRadius" && number !== null && radiusVar.has(String(number))) style[key] = radiusVar.get(String(number)) as string;
+      if (key === "fontSize" && number !== null && varOf.size.has(String(number))) style[key] = varOf.size.get(String(number)) as string;
+      else if (key === "fontWeight" && varOf.weight.has(String(value))) style[key] = varOf.weight.get(String(value)) as string;
+      else if (key === "borderRadius" && number !== null && varOf.radius.has(String(number))) style[key] = varOf.radius.get(String(number)) as string;
       else if (typeof value === "string" && COLOR_KEYS.has(key) && colorVar.has(value)) style[key] = colorVar.get(value) as string;
-      else if (typeof value === "string" && SPACE_KEYS.has(key)) style[key] = value.split(/\s+/).map((part) => spaceVar.get(String(px(part))) ?? part).join(" ");
+      else if (typeof value === "string" && SPACE_KEYS.has(key)) style[key] = value.split(/\s+/).map((part) => varOf.space.get(String(px(part))) ?? part).join(" ");
       else style[key] = value;
     }
     const attrs: Record<string, PaperValue> = {};

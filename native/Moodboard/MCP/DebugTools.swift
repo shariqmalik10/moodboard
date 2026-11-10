@@ -66,10 +66,10 @@
         model.addMaterials([URL(filePath: path)], at: nil)
         return true
       case "debug.remove":
-        model.focus?.inspector.model.onRemove()
+        model.focus?.perform(.remove)
         return true
       case "debug.update":
-        model.focus?.inspector.model.onUpdateFromPaper()
+        model.focus?.perform(.updateFromPaper)
         return true
       case "debug.paper":
         model.chrome?.state.showsPaper = params["show"] as? Bool ?? true
@@ -140,26 +140,27 @@
         let state = model.focus?.inspector.model
         return ["id": state?.itemId ?? NSNull(), "note": state?.note ?? "", "changes": state?.changes.map(\.line) ?? [], "before": state?.showsBefore ?? false, "paper": state?.paper?.rawValue ?? NSNull(), "lost": state?.lostTune ?? [], "built": state?.builtLine ?? NSNull(), "mark": state?.status.mark?.label ?? NSNull()] as JSON
       case "debug.hold":
-        model.focus?.inspector.model.onHoldBefore(params["on"] as? Bool ?? false)
+        model.focus?.perform(.holdBefore(params["on"] as? Bool ?? false))
         return true
       case "debug.revert":
         let state = model.focus?.inspector.model
-        if let dial = params["dial"] as? String, let change = state?.changes.first(where: { $0.dial == dial }) { state?.onRevert(change) } else { state?.onRevertAll() }
+        if let dial = params["dial"] as? String, let change = state?.changes.first(where: { $0.dial == dial }) { model.focus?.perform(.revert(change)) } else { model.focus?.perform(.revertAll) }
         return true
       case "debug.typeNote":
         model.focus?.inspector.model.note = params["note"] as? String ?? ""
-        model.focus?.inspector.model.onNoteEdited(params["note"] as? String ?? "")
+        model.focus?.perform(.noteEdited(params["note"] as? String ?? ""))
         return true
       case "debug.action":
-        let state = model.focus?.inspector.model
+        let action: InspectorAction
         switch params["name"] as? String {
-        case "copyBrief": state?.onCopyBrief()
-        case "copyChanges": state?.onCopyChanges()
-        case "toggleBuilt": state?.onToggleBuilt()
-        case "dismissLost": state?.onDismissLost()
-        case "startOver": state?.onStartOver()
+        case "copyBrief": action = .copyBrief
+        case "copyChanges": action = .copyChanges
+        case "toggleBuilt": action = .toggleBuilt
+        case "dismissLost": action = .dismissLost
+        case "startOver": action = .startOver
         default: throw ToolError("Which action?")
         }
+        model.focus?.perform(action)
         return true
       case "debug.paperCheck":
         await model.paperWatch?.check()

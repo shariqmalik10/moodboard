@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		00326C779AB3875899ED7C1B /* ListController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9B87D4DD2217451C14C53CC /* ListController.swift */; };
 		021AC7740B4AFFF838DC610F /* ProjectConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E7C6A5980A157C96E6F4D17 /* ProjectConnector.swift */; };
+		08E553967B76DFC7536B214C /* Colors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0574B11A7EF8064DF64BA5 /* Colors.swift */; };
 		0C7532A37B0F41F7B90E0CCA /* InspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4F0B3C4DF8677349CE7A0CC /* InspectorView.swift */; };
 		0E39C55587448ACB6EED3D02 /* ProjectSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64623353DAAA9C8EFD1F7561 /* ProjectSync.swift */; };
 		13B6CB5E23704A46ABDB9679 /* ProjectServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DABF942ACD2135A340F596BD /* ProjectServer.swift */; };
@@ -73,6 +74,7 @@
 		0F9F6CBD2998FF3ADAA404FD /* ProjectMeasurer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMeasurer.swift; sourceTree = "<group>"; };
 		1130BAFD46D3BC5AC4D1C5D3 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 		1137FFD7F8101C849D956DBF /* ProjectFinderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFinderTests.swift; sourceTree = "<group>"; };
+		1F0574B11A7EF8064DF64BA5 /* Colors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Colors.swift; sourceTree = "<group>"; };
 		223F67F2B9A7AB1D9FDA856F /* Motion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Motion.swift; sourceTree = "<group>"; };
 		285C0B2E1E6497AA06F3CBFB /* PageMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageMessages.swift; sourceTree = "<group>"; };
 		2C183E2EDBCDD9050AD262DE /* BoardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardStore.swift; sourceTree = "<group>"; };
@@ -248,6 +250,7 @@
 			isa = PBXGroup;
 			children = (
 				1130BAFD46D3BC5AC4D1C5D3 /* CanvasView.swift */,
+				1F0574B11A7EF8064DF64BA5 /* Colors.swift */,
 				C80CC225508BB62E3C7519EF /* LiveStage.swift */,
 				223F67F2B9A7AB1D9FDA856F /* Motion.swift */,
 				0B6A3BE74A65D527812510A2 /* Plates.swift */,
@@ -388,6 +391,7 @@
 				59AAF4BB950866A3275EF1F3 /* BoardStore.swift in Sources */,
 				FBC9640594CF91C6F06D36BA /* CanvasView.swift in Sources */,
 				A04504D9DCBF58A372E9B8B6 /* Chrome.swift in Sources */,
+				08E553967B76DFC7536B214C /* Colors.swift in Sources */,
 				FBE60CCA85B103237204756E /* ComponentLibrary.swift in Sources */,
 				FAF78F8AB727C4B3D3B41D7A /* DebugTools.swift in Sources */,
 				2364BC6C4CAAEC9B8334B1B0 /* Dials.swift in Sources */,

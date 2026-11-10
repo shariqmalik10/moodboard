@@ -403,7 +403,7 @@ final class CanvasView: NSView {
   }
 
   private func unmount(_ key: Instance.Key, _ tile: TileView) {
-    if let stage = tile.detach() { pool.release(stage) }
+    releaseStage(of: tile)
     mounted[key] = nil
     if hovered == key { hovered = nil }
     tile.isHidden = true
@@ -418,25 +418,35 @@ final class CanvasView: NSView {
     var moving = false
     let tiles = mounted.values
     var needing: [TileView] = []
-    let onHover = arrangement.runsOnHover
     for tile in tiles {
       // An open tile has the person's attention, so the wall behind it holds still.
       if tile.advance(dt, quiet: isLocked && !tile.isRaised) { moving = true }
       guard let item = tile.item, item.isComponent, !tile.isRaised else { continue }
-      if tile.stage != nil {
-        let keeps = onHover ? tile.key == hovered : tile.coverage.p >= Self.releaseBelow
-        if !keeps, let released = tile.detach() { pool.release(released) }
-      } else if onHover ? tile.key == hovered : tile.coverage.p > Self.warmAbove {
+      let running = tile.stage != nil
+      if running, !wantsStage(tile, running: true) {
+        releaseStage(of: tile)
+      } else if !running, wantsStage(tile, running: false) {
         needing.append(tile)
       }
     }
     guard let next = needing.max(by: { $0.coverage.p < $1.coverage.p }) else { return moving }
     // A tile fully in view outranks one still arriving, so what you're looking at runs first.
     if !provideStage(for: next), next.coverage.p >= TileView.liveAt, let weakest = weakestStage(below: next.coverage.p) {
-      if let released = weakest.detach() { pool.release(released) }
+      releaseStage(of: weakest)
       _ = provideStage(for: next)
     }
     return true
+  }
+
+  /// Whether a tile should be running. A running one keeps its stage down to less coverage than it takes to
+  /// start one, so a tile at the edge of the window doesn't start and stop as it moves.
+  private func wantsStage(_ tile: TileView, running: Bool) -> Bool {
+    if arrangement.runsOnHover { return tile.key == hovered }
+    return running ? tile.coverage.p >= Self.releaseBelow : tile.coverage.p > Self.warmAbove
+  }
+
+  private func releaseStage(of tile: TileView) {
+    if let stage = tile.detach() { pool.release(stage) }
   }
 
   private func provideStage(for tile: TileView) -> Bool {
@@ -462,7 +472,7 @@ final class CanvasView: NSView {
   func ensureStage(for tile: TileView) {
     guard tile.stage == nil, tile.item?.isComponent == true else { return }
     if provideStage(for: tile) { return }
-    if let weakest = weakestStage(below: 2), let released = weakest.detach() { pool.release(released) }
+    if let weakest = weakestStage(below: 2) { releaseStage(of: weakest) }
     _ = provideStage(for: tile)
   }
 
@@ -746,44 +756,5 @@ final class CanvasView: NSView {
       "mode": mode.rawValue, "hovered": hovered?.id ?? NSNull(), "headings": arrangement.headings.map(\.title), "span": arrangement.span,
       "homes": mounted.values.map { ["id": $0.item?.id ?? "", "x": $0.home.minX, "y": $0.home.minY, "w": $0.home.width, "h": $0.home.height] as JSON },
     ]
-  }
-}
-
-extension ComponentStatus {
-  /// The words under a card in Grid: its one mark, then whether it has a note.
-  static func attributed(_ status: ComponentStatus, in appearance: NSAppearance) -> NSAttributedString? {
-    let font = NSFont.systemFont(ofSize: 11, weight: .medium)
-    // A text layer doesn't draw in the view's appearance, so it needs the colour already worked out.
-    let fixed = { (color: NSColor) -> NSColor in
-      var resolved = color
-      appearance.performAsCurrentDrawingAppearance { resolved = NSColor(cgColor: color.cgColor) ?? color }
-      return resolved
-    }
-    let text = NSMutableAttributedString()
-    if status.hasNote {
-      text.append(NSAttributedString(string: status.mark == nil ? "Note" : "Note  ", attributes: [.font: font, .foregroundColor: fixed(.secondaryLabelColor)]))
-    }
-    if let mark = status.mark {
-      text.append(NSAttributedString(string: mark.label, attributes: [.font: font, .foregroundColor: fixed(mark.tone.color)]))
-    }
-    return text.length == 0 ? nil : text
-  }
-}
-
-extension ComponentStatus.Tone {
-  var color: NSColor {
-    switch self {
-    case .attention: .systemOrange
-    case .accent: .controlAccentColor
-    case .done: .systemGreen
-    }
-  }
-}
-
-enum Palette {
-  static let wall = NSColor(name: nil) { appearance in
-    appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-      ? NSColor(srgbRed: 0.075, green: 0.082, blue: 0.09, alpha: 1)
-      : NSColor(srgbRed: 0.957, green: 0.961, blue: 0.945, alpha: 1)
   }
 }

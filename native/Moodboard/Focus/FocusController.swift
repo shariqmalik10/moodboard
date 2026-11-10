@@ -59,11 +59,11 @@ final class FocusController {
       guard let self, !self.reopenIfHit(point) else { return }
       self.close()
     }
-    inspector.model.onClose = { [weak self] in self?.close() }
-    inspector.model.onRemove = { [weak self] in self?.removeOpenItem() }
-    inspector.model.onUpdateFromPaper = { [weak self] in self?.updateFromPaper() }
-    connectLoop()
-    model.handoffs.connect(inspector.model)
+    inspector.model.onAction = { [weak self] action in self?.perform(action) }
+    optionMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+      self?.optionChanged(event)
+      return event
+    }
     layoutInspector()
   }
 
@@ -272,27 +272,28 @@ final class FocusController {
 
   // MARK: The loop from Paper to code
 
-  private func connectLoop() {
-    let state = inspector.model
-    state.onStartOver = { [weak self] in self?.handsOnStage?.startOver() }
-    state.onWatch = { [weak self] in self?.handsOnStage?.watch() }
-    state.onHoldBefore = { [weak self] held in self?.holdBefore(held) }
-    state.onNoteEdited = { [weak self] text in
-      if let self, let id = openItemId { model.statuses.setNote(id, text) }
-    }
-    state.onRevert = { [weak self] change in
-      if let self, let id = openItemId { model.dials.set(id, values: [change.dial: change.from]) }
-    }
-    state.onRevertAll = { [weak self] in
-      guard let self, let id = openItemId else { return }
-      model.dials.set(id, values: Dictionary(uniqueKeysWithValues: model.statuses.changes(id).map { ($0.dial, $0.from) }))
-    }
-    state.onCopyChanges = { [weak self] in
-      guard let self, let id = openItemId else { return }
-      copy(model.statuses.changes(id).map(\.line).joined(separator: "\n"))
-    }
-    state.onCopyBrief = { [weak self] in
-      guard let self, let id = openItemId else { return }
+  /// What a button in the panel asked for. Most of it acts on the component that's open.
+  func perform(_ action: InspectorAction) {
+    let id = openItemId
+    let statuses = model.statuses
+    switch action {
+    case .close: close()
+    case .remove: removeOpenItem()
+    case .updateFromPaper: updateFromPaper()
+    case .startOver: handsOnStage?.startOver()
+    case .watch: handsOnStage?.watch()
+    case .holdBefore(let held): holdBefore(held)
+    case .handoff(let handoff): model.handoffs.perform(handoff, in: inspector.model)
+    case .noteEdited(let text):
+      if let id { statuses.setNote(id, text) }
+    case .revert(let change):
+      if let id { model.dials.set(id, values: [change.dial: change.from]) }
+    case .revertAll:
+      if let id { model.dials.set(id, values: Dictionary(uniqueKeysWithValues: statuses.changes(id).map { ($0.dial, $0.from) })) }
+    case .copyChanges:
+      if let id { copy(statuses.changes(id).map(\.line).joined(separator: "\n")) }
+    case .copyBrief:
+      guard let id else { return }
       Task {
         do {
           copy(try await model.tools.brief(id)["markdown"] as? String ?? "")
@@ -301,21 +302,15 @@ final class FocusController {
           model.chrome?.say(error.localizedDescription)
         }
       }
-    }
-    state.onToggleBuilt = { [weak self] in
-      guard let self, let id = openItemId else { return }
-      if model.statuses.built(id) == nil {
-        model.statuses.markBuilt(id, repository: nil, summary: nil, session: nil)
+    case .toggleBuilt:
+      guard let id else { return }
+      if statuses.built(id) == nil {
+        statuses.markBuilt(id, repository: nil, summary: nil, session: nil)
       } else {
-        model.statuses.clearBuilt(id)
+        statuses.clearBuilt(id)
       }
-    }
-    state.onDismissLost = { [weak self] in
-      if let self, let id = openItemId { model.statuses.recordLostTune(id, []) }
-    }
-    optionMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-      self?.optionChanged(event)
-      return event
+    case .dismissLost:
+      if let id { statuses.recordLostTune(id, []) }
     }
   }
 
@@ -345,7 +340,7 @@ final class FocusController {
   }
 
   private func optionChanged(_ event: NSEvent) {
-    guard openItemId != nil, inspector.model.sourceFile == nil, !inspector.model.changes.isEmpty else { return }
+    guard openItemId != nil, !inspector.model.isProject, !inspector.model.changes.isEmpty else { return }
     let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
     // Option moves the caret by words in a text field, and that shouldn't flash the component.
     if flags == .option, model.window.firstResponder is NSText { return }

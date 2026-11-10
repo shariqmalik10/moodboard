@@ -101,21 +101,18 @@ final class Handoffs {
     set { UserDefaults.standard.set(newValue.prefix(6).map(\.path), forKey: Self.recentsKey) }
   }
 
-  func connect(_ inspector: InspectorModel) {
-    inspector.onSend = { [weak self, weak inspector] in
-      guard let inspector, let id = inspector.itemId, let repository = inspector.repository else { return }
-      self?.send(id: id, repository: repository)
-      inspector.run = self?.runs[id]
-    }
-    inspector.onStop = { [weak self, weak inspector] in
-      if let id = inspector?.itemId { self?.stop(id) }
-    }
-    inspector.onResume = { [weak self, weak inspector] in
-      if let id = inspector?.itemId { self?.resume(id) }
-    }
-    inspector.onSignIn = { [weak self] in self?.runInTerminal("claude auth login", named: "sign-in") }
-    inspector.onChooseRepository = { [weak self, weak inspector] in
-      if let inspector { self?.chooseRepository(for: inspector) }
+  func perform(_ action: HandoffAction, in inspector: InspectorModel) {
+    if case .signIn = action { return runInTerminal("claude auth login", named: "sign-in") }
+    if case .chooseRepository = action { return chooseRepository(for: inspector) }
+    guard let id = inspector.itemId else { return }
+    switch action {
+    case .send:
+      guard let repository = inspector.repository else { return }
+      send(id: id, repository: repository)
+      inspector.run = runs[id]
+    case .stop: stop(id)
+    case .resume: resume(id)
+    case .signIn, .chooseRepository: break
     }
   }
 
