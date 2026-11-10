@@ -281,11 +281,11 @@ final class FocusController {
       if let self, let id = openItemId { model.statuses.setNote(id, text) }
     }
     state.onRevert = { [weak self] change in
-      if let self, let id = openItemId { setDial(id: id, values: [change.dial: change.from]) }
+      if let self, let id = openItemId { model.dials.set(id, values: [change.dial: change.from]) }
     }
     state.onRevertAll = { [weak self] in
       guard let self, let id = openItemId else { return }
-      setDial(id: id, values: Dictionary(uniqueKeysWithValues: model.statuses.changes(id).map { ($0.dial, $0.from) }))
+      model.dials.set(id, values: Dictionary(uniqueKeysWithValues: model.statuses.changes(id).map { ($0.dial, $0.from) }))
     }
     state.onCopyChanges = { [weak self] in
       guard let self, let id = openItemId else { return }
@@ -409,15 +409,7 @@ final class FocusController {
 
   func tuned(id: String, state: Any?, byPerson: Bool) {
     dialsChanged = true
-    if ProjectCatalog.contains(id) {
-      model.projects.tuned(id, state: state, byPerson: byPerson)
-      return
-    }
-    model.statuses.tuneChanged(id)
-    let data = state.flatMap { $0 is NSNull ? nil : try? JSONSerialization.data(withJSONObject: $0) }
-    DialState.write(id, data)
-    let saved = (state as? JSON)?["values"] as? JSON ?? [:]
-    model.pool.stages(showing: id).forEach { $0.tune(saved: saved) }
+    model.dials.panelSaved(id, state: state, byPerson: byPerson)
   }
 
   /// A click on the tile while it flies home brings it back, from wherever it has reached.
@@ -436,17 +428,6 @@ final class FocusController {
     inspector.show(item: item)
   }
 
-  func setDial(id: String, values: JSON) {
-    if ProjectCatalog.contains(id) {
-      model.projects.setDials(id, values: values)
-      return
-    }
-    DialState.merge(id, values: values)
-    model.statuses.tuneChanged(id)
-    let saved = DialState.saved(id)
-    model.pool.stages(showing: id).forEach { $0.tune(saved: saved) }
-    if openItemId == id { inspector.setDials(values) } else { model.plates?.invalidate(id) }
-  }
 }
 
 /// Lets clicks through where nothing is standing, so the scrim below can catch them.

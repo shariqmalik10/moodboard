@@ -60,11 +60,6 @@ final class ProjectSync {
   private static let settle = Duration.milliseconds(350)
 
   private var latestHash: [String: String] = [:]
-  /// What the source holds for each open dial, so only a real move becomes a write.
-  private var seen: [String: JSON] = [:]
-  private var pending: [String: JSON] = [:]
-  private var flushing: [String: Task<Void, Never>] = [:]
-  private var scheduled: [String: Task<Void, Never>] = [:]
 
   init(app: AppModel) {
     self.app = app
@@ -234,10 +229,7 @@ final class ProjectSync {
 
   private func forget(_ id: String) {
     latestHash[id] = nil
-    seen[id] = nil
-    pending[id] = nil
-    scheduled[id]?.cancel()
-    scheduled[id] = nil
+    app.dials.forget(id)
   }
 
   private func startServer(_ project: ConnectedProject) {
@@ -338,7 +330,7 @@ final class ProjectSync {
     if !bySelf, let open = app.focus?.openItemId, edited.contains(open) { app.focus?.reloadPanel() }
     // An edit elsewhere may have taken back what a dial wrote, and the mark on the tile should say so.
     if !bySelf {
-      for id in edited where app.statuses.status(id).written > 0 { Task { _ = await record(id) } }
+      for id in edited where app.statuses.status(id).written > 0 { Task { _ = await app.dials.record(id) } }
     }
     startSoon()
     refreshLines()
@@ -509,121 +501,8 @@ final class ProjectSync {
     }
   }
 
-  // MARK: The panel
-
-  /// A component's panel, read from the source every time, because a write's hash can arrive after the file is already back to its old text.
-  func record(_ id: String) async -> Data? {
-    guard let project = ProjectCatalog.project(of: id), let server = servers[project.slug] else { return nil }
-    guard let data = try? await server.dials(id: id), let record = (try? JSONSerialization.jsonObject(with: data)) as? JSON else { return nil }
-    seen[id] = record["values"] as? JSON ?? [:]
-    showFiles(record["files"] as? [String], for: id)
-    applyJournal(record, to: id)
-    return data
-  }
-
-  /// A dial can land in a stylesheet too, which other components may share, so the panel names every file.
-  private func showFiles(_ files: [String]?, for id: String) {
-    guard let files, app.focus?.openItemId == id else { return }
-    app.focus?.inspector.model.sourceFile = files.joined(separator: ", ")
-  }
-
-  /// What the panel just saved. Sample props stay in the app, and everything else goes to the source.
-  func tuned(_ id: String, state: Any?, byPerson: Bool) {
-    guard var whole = state as? JSON else {
-      DialState.write(id, nil)
-      app.pool.stages(showing: id).forEach { $0.tune(saved: [:]) }
-      app.statuses.tuneChanged(id)
-      return
-    }
-    let values = whole["values"] as? JSON ?? [:]
-    let (samples, source) = Self.split(values)
-    whole["values"] = samples
-    if let base = whole["baseValues"] as? JSON { whole["baseValues"] = Self.split(base).samples }
-    DialState.write(id, try? JSONSerialization.data(withJSONObject: whole))
-    app.pool.stages(showing: id).forEach { $0.tune(saved: samples) }
-    app.statuses.tuneChanged(id)
-    if byPerson {
-      queueWrites(id, source)
-    } else {
-      // The panel loading, in the form it holds values. That's the baseline a person's move is measured from.
-      seen[id, default: [:]].merge(source) { _, new in new }
-    }
-  }
-
-  /// A dial moved from outside the panel: a revert, or Claude Code.
-  func setDials(_ id: String, values: JSON) {
-    let (samples, source) = Self.split(values)
-    if !samples.isEmpty {
-      DialState.merge(id, values: samples)
-      app.pool.stages(showing: id).forEach { $0.tune(saved: DialState.saved(id)) }
-      app.statuses.tuneChanged(id)
-    }
-    queueWrites(id, source)
-    if app.focus?.openItemId == id { app.focus?.inspector.setDials(values) }
-  }
-
-  /// Waits for what's been asked of this component's file to land.
-  func settled(_ id: String) async {
-    while scheduled[id] != nil || flushing[id] != nil || pending[id] != nil {
-      try? await Task.sleep(for: .milliseconds(30))
-    }
-  }
-
-  static func split(_ values: JSON) -> (samples: JSON, source: JSON) {
-    var samples: JSON = [:]
-    var source: JSON = [:]
-    for (path, value) in values where path != "reset" {
-      if path.hasPrefix(ProjectCatalog.samplePrefix) { samples[path] = value } else { source[path] = value }
-    }
-    return (samples, source)
-  }
-
-  private func queueWrites(_ id: String, _ source: JSON) {
-    var known = seen[id] ?? [:]
-    let moved = source.filter { path, value in
-      guard let before = known[path] as? NSObject, let after = value as? NSObject else { return true }
-      return !before.isEqual(after)
-    }
-    guard !moved.isEmpty else { return }
-    known.merge(moved) { _, new in new }
-    seen[id] = known
-    pending[id, default: [:]].merge(moved) { _, new in new }
-    // A drag writes as it goes, so the tile follows the dial instead of waiting for the hand to stop.
-    guard scheduled[id] == nil else { return }
-    scheduled[id] = Task {
-      try? await Task.sleep(for: .milliseconds(50))
-      guard !Task.isCancelled else { return }
-      scheduled[id] = nil
-      flush(id)
-    }
-  }
-
-  private func flush(_ id: String) {
-    guard flushing[id] == nil, let values = pending.removeValue(forKey: id), let project = ProjectCatalog.project(of: id), let server = servers[project.slug] else { return }
-    flushing[id] = Task {
-      do {
-        apply(try await server.write(id: id, values: values), to: id)
-      } catch {
-        app.chrome?.say("Couldn't write to \(ProjectCatalog.row(id)?.file ?? "the file"). \(error.localizedDescription)")
-      }
-      flushing[id] = nil
-      if pending[id] != nil { flush(id) }
-    }
-  }
-
-  private func applyJournal(_ result: JSON, to id: String) {
-    app.statuses.setWrites(id, (result["journal"] as? [JSON] ?? []).compactMap { entry in
-      guard let path = entry["path"] else { return nil }
-      return DialChange(["dial": path, "from": entry["fromValue"] ?? NSNull(), "to": entry["toValue"] ?? NSNull()])
-    })
-  }
-
-  private func apply(_ result: JSON, to id: String) {
-    applyJournal(result, to: id)
-    let conflicts = result["conflicts"] as? [String] ?? []
-    guard !conflicts.isEmpty else { return }
-    // The file moved under the panel, so what the panel shows can't be trusted any more.
-    app.chrome?.say("\(ProjectCatalog.row(id)?.file ?? "That file") changed while you were tuning, so the dials reloaded from it.")
-    if app.focus?.openItemId == id { app.focus?.reloadPanel() }
+  /// The running server for a component's project, if it's up.
+  func server(for id: String) -> ProjectServer? {
+    ProjectCatalog.project(of: id).flatMap { servers[$0.slug] }
   }
 }

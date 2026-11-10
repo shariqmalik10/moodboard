@@ -111,6 +111,7 @@ final class AppModel {
   private(set) lazy var tools = Tools(model: self)
   private(set) lazy var handoffs = Handoffs(app: self)
   private(set) lazy var projects = ProjectSync(app: self)
+  private(set) lazy var dials = Dials(app: self)
   private(set) lazy var welcome = WelcomeController(app: self)
 
   init(host: WebHost, root: RootView, window: NSWindow) {
@@ -120,7 +121,7 @@ final class AppModel {
     runtime = Runtime(host: host, backstage: root.backstage)
     pool = LivePool(host: host, backstage: root.backstage)
     host.bridge.onMessage = { [weak self] web, message in self?.receive(web, message) }
-    host.scheme.projectRecord = { [weak self] id in await self?.projects.record(id) }
+    host.scheme.projectRecord = { [weak self] id in await self?.dials.record(id) }
   }
 
   func start() async {

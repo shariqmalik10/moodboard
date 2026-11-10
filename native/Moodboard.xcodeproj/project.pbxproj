@@ -13,6 +13,7 @@
 		13B6CB5E23704A46ABDB9679 /* ProjectServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DABF942ACD2135A340F596BD /* ProjectServer.swift */; };
 		1EC7A6387D3491EB86F0B0C7 /* Plates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B6A3BE74A65D527812510A2 /* Plates.swift */; };
 		210E9303466DBD93D9F0FA5D /* ProjectsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CE0926EAB84C9DEBEC5AC64 /* ProjectsPanel.swift */; };
+		2364BC6C4CAAEC9B8334B1B0 /* Dials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BA49D9E67FAB21FA7D43C84 /* Dials.swift */; };
 		36C16DC1D781259E711816E3 /* Motion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 223F67F2B9A7AB1D9FDA856F /* Motion.swift */; };
 		421329C8FE9CE43099375CB0 /* Materials.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5327A1D2D24B5B2CC649355 /* Materials.swift */; };
 		43F1022BFEFC1EF828B93E61 /* Welcome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60109589A070C613B611B0DE /* Welcome.swift */; };
@@ -81,6 +82,7 @@
 		64623353DAAA9C8EFD1F7561 /* ProjectSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSync.swift; sourceTree = "<group>"; };
 		72CD0B638F4E098C4A1A58C0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		837D9AA74E9E0E0A7A3411C3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		8BA49D9E67FAB21FA7D43C84 /* Dials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dials.swift; sourceTree = "<group>"; };
 		8CC9800B0331045504E847A3 /* Importer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Importer.swift; sourceTree = "<group>"; };
 		902A0A6F20FD6D0D0BF86BBC /* WebHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebHost.swift; sourceTree = "<group>"; };
 		9079BE21C60FEFEEADE46812 /* ViewsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewsTests.swift; sourceTree = "<group>"; };
@@ -189,6 +191,7 @@
 			children = (
 				2C183E2EDBCDD9050AD262DE /* BoardStore.swift */,
 				0E1FC1133EE32F3F3B2F7BA8 /* ComponentLibrary.swift */,
+				8BA49D9E67FAB21FA7D43C84 /* Dials.swift */,
 				B33B2DD6C9DC2F159EDD0C11 /* Layout.swift */,
 				A5327A1D2D24B5B2CC649355 /* Materials.swift */,
 				50CFE2F55D85A55B8DC206C1 /* Models.swift */,
@@ -377,6 +380,7 @@
 				A04504D9DCBF58A372E9B8B6 /* Chrome.swift in Sources */,
 				FBE60CCA85B103237204756E /* ComponentLibrary.swift in Sources */,
 				FAF78F8AB727C4B3D3B41D7A /* DebugTools.swift in Sources */,
+				2364BC6C4CAAEC9B8334B1B0 /* Dials.swift in Sources */,
 				ECCD88DA275A6D7C23119589 /* Fit.swift in Sources */,
 				D6A275785473627B27B60044 /* FocusController.swift in Sources */,
 				FD06A518F555E78473ABCCBA /* Handoffs.swift in Sources */,

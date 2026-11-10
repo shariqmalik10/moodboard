@@ -231,18 +231,7 @@ final class Tools {
 
   private func setDials(_ id: String, _ values: JSON) async throws -> Any {
     guard !values.isEmpty else { throw ToolError("Pass values, such as {\"Type.17 px\": 20}.") }
-    if ProjectCatalog.contains(id) {
-      guard let record = await model.projects.record(id), let values2 = ((try? JSONSerialization.jsonObject(with: record)) as? JSON)?["values"] as? JSON else { throw ToolError("The project's server isn't running.") }
-      let unknown = values.keys.filter { values2[$0] == nil && !$0.hasPrefix(ProjectCatalog.samplePrefix) }
-      guard unknown.isEmpty else { throw ToolError("\(id) has no dial called \(unknown.joined(separator: ", ")). It has: \(values2.keys.sorted().joined(separator: ", "))") }
-      model.projects.setDials(id, values: values)
-      await model.projects.settled(id)
-      return model.statuses.changes(id).map { ["dial": $0.dial, "from": $0.from, "to": $0.to] as JSON }
-    }
-    let dials = Set(try await brief(id)["dials"] as? [String] ?? [])
-    let unknown = values.keys.filter { !dials.contains($0) }
-    guard unknown.isEmpty else { throw ToolError("\(id) has no dial called \(unknown.joined(separator: ", ")). It has: \(dials.sorted().joined(separator: ", "))") }
-    model.focus?.setDial(id: id, values: values)
-    return try await brief(id)["changes"] ?? []
+    return try await model.dials.setChecked(id, values: values)
   }
+
 }
