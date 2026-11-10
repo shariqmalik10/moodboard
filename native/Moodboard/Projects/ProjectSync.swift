@@ -380,9 +380,9 @@ final class ProjectSync {
   }
 
   private func pump() {
-    while measurers.filter({ $0.job != nil }).count < Self.concurrency, let at = queue.firstIndex(where: { ProjectCatalog.url(for: $0.found.id, flag: "measure") != nil }) {
+    while measurers.filter({ $0.job != nil }).count < Self.concurrency, let at = queue.firstIndex(where: { ProjectCatalog.url(for: $0.found.id, mode: .measure) != nil }) {
       let job = queue.remove(at: at)
-      guard let url = ProjectCatalog.url(for: job.found.id, flag: "measure") else { continue }
+      guard let url = ProjectCatalog.url(for: job.found.id, mode: .measure) else { continue }
       let measurer = measurers.first { $0.job == nil } ?? makeMeasurer()
       measurer.job = job
       measurer.web.load(URLRequest(url: url))
@@ -408,13 +408,13 @@ final class ProjectSync {
 
   func owns(_ web: WKWebView?) -> Bool { measurers.contains { $0.web === web } }
 
-  func handle(_ web: WKWebView?, message: JSON) {
-    guard let measurer = measurers.first(where: { $0.web === web }), let job = measurer.job, message["id"] as? String == job.found.id else { return }
-    switch message["type"] as? String {
-    case "measured":
-      measured(measurer, job, width: message["width"] as? Double ?? 0, height: message["height"] as? Double ?? 0, ground: message["ground"] as? String ?? "#ffffff", blank: message["blank"] as? Bool ?? true)
-    case "failed":
-      failed(measurer, reason: message["message"] as? String ?? "It didn't load.")
+  func handle(_ web: WKWebView?, message: PageMessage) {
+    guard let measurer = measurers.first(where: { $0.web === web }), let job = measurer.job else { return }
+    switch message {
+    case .measured(let id, let width, let height, let ground, let blank) where id == job.found.id:
+      measured(measurer, job, width: width, height: height, ground: ground, blank: blank)
+    case .failed(let id, let reason) where id == job.found.id:
+      failed(measurer, reason: reason)
     default:
       break
     }

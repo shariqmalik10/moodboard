@@ -23,7 +23,6 @@ final class FocusController {
   private var dialsChanged = false
   private var pendingWrite: Task<Void, Never>?
 
-  private static let inspectorWidth = 360.0
   private static let controlsSpace = 52.0
 
   init(model: AppModel, root: NSView) {
@@ -87,21 +86,16 @@ final class FocusController {
   private func layoutInspector() {
     guard let bounds = inspector.superview?.bounds else { return }
     let offset = (1 - progress.value) * (calm ? 0 : 28)
-    inspector.frame = CGRect(x: bounds.width - Self.inspectorWidth + offset, y: 0, width: Self.inspectorWidth, height: bounds.height)
+    inspector.frame = CGRect(x: bounds.width - Stand.inspectorWidth + offset, y: 0, width: Stand.inspectorWidth, height: bounds.height)
   }
 
   /// Where the open tile stands: as big as fits beside the panel, up to 1.6 times its real size.
   private func detailRect(for item: Item) -> CGRect {
     let bounds = host.bounds
     let pad = 40.0
-    let areaW = bounds.width - pad * 2 - Self.inspectorWidth
+    let areaW = bounds.width - pad * 2 - Stand.inspectorWidth
     let areaH = bounds.height - pad * 2 - Self.controlsSpace
-    let natural: Double
-    switch item.body {
-    case .component(_, let crop): natural = crop.w * 1.6
-    case .material(let material): natural = max(material.w, Grain.cardWidth)
-    }
-    let w = min(areaW, areaH / item.aspect, natural)
+    let w = Stand.width(of: item, inWidth: areaW, height: areaH)
     let h = w * item.aspect
     return CGRect(x: pad + (areaW - w) / 2, y: pad + (areaH - h) / 2, width: w, height: h)
   }

@@ -382,9 +382,7 @@ final class TileView: NSView {
     guard scale != homeScale else { return }
     homeScale = scale
     layoutParts(scale: scale)
-    if let stage, let item, case .component(let viewport, let crop) = item.body {
-      stage.present(viewport: viewport, crop: crop, scale: scale * Grain.cardWidth / crop.w)
-    }
+    presentStage(at: scale)
     shownP = -1
   }
 
@@ -396,10 +394,19 @@ final class TileView: NSView {
 
   func attach(_ stage: LiveStage) {
     self.stage = stage
-    guard let item, case .component(let viewport, let crop) = item.body else { return }
-    stage.present(viewport: viewport, crop: crop, scale: homeScale * Grain.cardWidth / crop.w)
+    guard item?.isComponent == true else { return }
+    presentStage(at: homeScale)
     liveHost.addSubview(stage.web)
   }
+
+  /// Shows the running component's crop at this tile scale.
+  private func presentStage(at scale: Double) {
+    guard let stage, let item, case .component(let viewport, let crop) = item.body else { return }
+    stage.present(viewport: viewport, crop: crop, scale: scale * Grain.cardWidth / crop.w)
+  }
+
+  /// A tile's corner radius when it's drawn this wide.
+  static func radius(forWidth width: Double) -> Double { radius * width / Grain.cardWidth }
 
   func detach() -> LiveStage? {
     defer { stage = nil }
@@ -424,10 +431,8 @@ final class TileView: NSView {
     layer?.transform = CATransform3DIdentity
     frame.size = CGSize(width: cardSize.width * scale, height: cardSize.height * scale)
     layoutParts(scale: scale)
-    if let stage, let item, case .component(let viewport, let crop) = item.body {
-      stage.present(viewport: viewport, crop: crop, scale: scale * Grain.cardWidth / crop.w)
-      stage.web.isInteractive = true
-    }
+    presentStage(at: scale)
+    stage?.web.isInteractive = true
     layer?.shadowOpacity = isBare ? 0 : 0.28
     layer?.shadowRadius = 40
     layer?.shadowOffset = CGSize(width: 0, height: 18)
@@ -451,10 +456,8 @@ final class TileView: NSView {
     caption.isHidden = cell == nil
     markLayer.isHidden = cell == nil || markLayer.string == nil
     well.isHidden = cell == nil
-    if let stage, let item, case .component(let viewport, let crop) = item.body {
-      stage.present(viewport: viewport, crop: crop, scale: homeScale * Grain.cardWidth / crop.w)
-      stage.web.isInteractive = false
-    }
+    presentStage(at: homeScale)
+    stage?.web.isInteractive = false
     layer?.shadowRadius = 18
     layer?.shadowOffset = CGSize(width: 0, height: 8)
     shownP = -1

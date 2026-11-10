@@ -244,8 +244,8 @@ final class AppModel {
     alert.runModal()
   }
 
-  private func receive(_ web: WKWebView?, _ message: JSON) {
-    if message["type"] as? String == "runtime-ready" {
+  private func receive(_ web: WKWebView?, _ message: PageMessage) {
+    if case .runtimeReady = message {
       runtime.markReady()
       return
     }
@@ -257,18 +257,17 @@ final class AppModel {
       plates?.handle(web, message: message)
       return
     }
-    if message["type"] as? String == "runtime-ready" { return }
-    switch message["type"] as? String {
-    case "dials":
-      if let id = message["id"] as? String { focus?.tuned(id: id, state: message["state"], byPerson: message["byPerson"] as? Bool ?? false) }
-    case "escape":
+    switch message {
+    case .dials(let id, let state, let byPerson):
+      focus?.tuned(id: id, state: state, byPerson: byPerson)
+    case .escape:
       focus?.close()
-    case "ready":
+    case .ready:
       pool.stage(of: web)?.markReady()
       canvas?.wake()
-    case "failed":
-      pool.stage(of: web)?.markFailed(message["message"] as? String ?? "It didn't load.")
-    default:
+    case .failed(_, let reason):
+      pool.stage(of: web)?.markFailed(reason)
+    case .runtimeReady, .measured, .driving:
       break
     }
   }

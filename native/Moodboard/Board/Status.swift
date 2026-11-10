@@ -158,12 +158,18 @@ struct DialChange: Identifiable {
 
 /// Keeps each component's place in the loop, and tells the views when it moves.
 final class StatusStore {
+  /// Everything known about one component. Only the annotation is kept on disk.
+  private struct Entry {
+    var annotation = Annotation()
+    var tuneKey: String?
+    var changes: [DialChange] = []
+    /// Dials on a connected project's component that have edited its source this session.
+    var writes: [DialChange] = []
+    var paper: PaperState?
+  }
+
   private unowned let runtime: Runtime
-  private var annotations: [String: Annotation]
-  private var tuneKeys: [String: String] = [:]
-  private var changeLists: [String: [DialChange]] = [:]
-  private var writes: [String: [DialChange]] = [:]
-  private var paperStates: [String: PaperState] = [:]
+  private var entries: [String: Entry]
   private var pending: [String: Task<Void, Never>] = [:]
   private var writing: Task<Void, Never>?
   var onChange: ((String?) -> Void)?
@@ -183,29 +189,32 @@ final class StatusStore {
 
   init(runtime: Runtime) {
     self.runtime = runtime
-    annotations = (try? Data(contentsOf: Paths.notes)).flatMap { try? Self.decoder.decode([String: Annotation].self, from: $0) } ?? [:]
+    let saved = (try? Data(contentsOf: Paths.notes)).flatMap { try? Self.decoder.decode([String: Annotation].self, from: $0) } ?? [:]
+    entries = saved.mapValues { Entry(annotation: $0) }
   }
 
   func status(_ id: String) -> ComponentStatus {
+    let entry = entries[id] ?? Entry()
+    let hasNote = entry.annotation.note != nil
     // A connected project's dials are already in its source, so there's nothing waiting to be built.
-    if ProjectCatalog.isProjectId(id) { return ComponentStatus(hasNote: annotations[id]?.note != nil, written: writes[id]?.count ?? 0) }
-    var status = ComponentStatus(tuned: changeLists[id]?.count ?? 0, hasNote: annotations[id]?.note != nil, paper: paperStates[id])
-    if let built = annotations[id]?.built {
-      let isSame = built.tune == (tuneKeys[id] ?? Self.untuned) && built.design == Self.design(of: id)
+    if ProjectCatalog.isProjectId(id) { return ComponentStatus(hasNote: hasNote, written: entry.writes.count) }
+    var status = ComponentStatus(tuned: entry.changes.count, hasNote: hasNote, paper: entry.paper)
+    if let built = entry.annotation.built {
+      let isSame = built.tune == (entry.tuneKey ?? Self.untuned) && built.design == Self.design(of: id)
       status.build = isSame ? .built : .changedSince
     }
     return status
   }
 
-  func changes(_ id: String) -> [DialChange] { (changeLists[id] ?? []) + (writes[id] ?? []) }
+  func changes(_ id: String) -> [DialChange] { entries[id].map { $0.changes + $0.writes } ?? [] }
 
   func setWrites(_ id: String, _ changes: [DialChange]) {
-    writes[id] = changes
+    entries[id, default: Entry()].writes = changes
     onChange?(id)
   }
-  func note(_ id: String) -> String { annotations[id]?.note ?? "" }
-  func built(_ id: String) -> Built? { annotations[id]?.built }
-  func lostTune(_ id: String) -> [String] { annotations[id]?.lostTune ?? [] }
+  func note(_ id: String) -> String { entries[id]?.annotation.note ?? "" }
+  func built(_ id: String) -> Built? { entries[id]?.annotation.built }
+  func lostTune(_ id: String) -> [String] { entries[id]?.annotation.lostTune ?? [] }
 
   private static let untuned = "[]"
 
@@ -245,23 +254,24 @@ final class StatusStore {
   }
 
   private func apply(_ summary: JSON, to id: String) {
-    tuneKeys[id] = summary["key"] as? String
-    changeLists[id] = (summary["changes"] as? [JSON] ?? []).compactMap(DialChange.init)
+    entries[id, default: Entry()].tuneKey = summary["key"] as? String
+    entries[id, default: Entry()].changes = (summary["changes"] as? [JSON] ?? []).compactMap(DialChange.init)
   }
 
   // MARK: What the person said
 
   func setNote(_ id: String, _ text: String) {
-    let hadNote = annotations[id]?.note != nil
+    let hadNote = entries[id]?.annotation.note != nil
     edit(id) { $0.note = text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : text }
-    let hasNote = annotations[id]?.note != nil
+    let hasNote = entries[id]?.annotation.note != nil
     saveSoon()
     if hadNote != hasNote { onChange?(id) }
   }
 
   func markBuilt(_ id: String, repository: String?, summary: String?, session: String?) {
+    let tune = entries[id]?.tuneKey ?? Self.untuned
     edit(id) {
-      $0.built = Built(at: .now, repository: repository, summary: summary, session: session, tune: tuneKeys[id] ?? Self.untuned, design: Self.design(of: id))
+      $0.built = Built(at: .now, repository: repository, summary: summary, session: session, tune: tune, design: Self.design(of: id))
       $0.note = nil
     }
     save()
@@ -281,24 +291,18 @@ final class StatusStore {
   }
 
   func forget(_ id: String) {
-    annotations[id] = nil
-    tuneKeys[id] = nil
-    changeLists[id] = nil
-    writes[id] = nil
-    paperStates[id] = nil
+    entries[id] = nil
     save()
   }
 
   func setPaper(_ id: String, _ state: PaperState?) {
-    guard paperStates[id] != state else { return }
-    paperStates[id] = state
+    guard entries[id]?.paper != state else { return }
+    entries[id, default: Entry()].paper = state
     onChange?(id)
   }
 
   private func edit(_ id: String, _ change: (inout Annotation) -> Void) {
-    var annotation = annotations[id] ?? Annotation()
-    change(&annotation)
-    annotations[id] = annotation.isEmpty ? nil : annotation
+    change(&entries[id, default: Entry()].annotation)
   }
 
   private func saveSoon() {
@@ -312,6 +316,7 @@ final class StatusStore {
   func save() {
     writing?.cancel()
     writing = nil
+    let annotations = entries.compactMapValues { $0.annotation.isEmpty ? nil : $0.annotation }
     if let data = try? Self.encoder.encode(annotations) { try? data.write(to: Paths.notes, options: .atomic) }
   }
 }

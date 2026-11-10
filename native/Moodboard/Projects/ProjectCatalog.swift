@@ -119,14 +119,14 @@ enum ProjectCatalog {
   }
 
   /// Where a running component lives, once its project's server has said which port it took.
-  static func url(for id: String, flag: String) -> URL? {
+  static func url(for id: String, mode: StageMode) -> URL? {
     guard isProjectId(id), let slug = id.split(separator: "/").dropFirst().first.map(String.init), let port = ports[slug] else { return nil }
     var components = URLComponents()
     components.scheme = "http"
     components.host = "127.0.0.1"
     components.port = port
     components.path = "/stage.html"
-    components.queryItems = [URLQueryItem(name: "demo", value: id), URLQueryItem(name: flag, value: "1")]
+    components.queryItems = [URLQueryItem(name: "demo", value: id), URLQueryItem(name: mode.rawValue, value: "1")]
     return components.url
   }
 }

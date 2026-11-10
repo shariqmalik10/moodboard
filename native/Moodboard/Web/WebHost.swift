@@ -103,11 +103,11 @@ final class SchemeHandler: NSObject, WKURLSchemeHandler {
 
 /// What the pages say, sorted by who said it.
 final class WebBridge: NSObject, WKScriptMessageHandler {
-  var onMessage: ((WKWebView?, JSON) -> Void)?
+  var onMessage: ((WKWebView?, PageMessage) -> Void)?
 
   func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
-    guard let body = message.body as? JSON else { return }
-    onMessage?(message.webView, body)
+    guard let body = message.body as? JSON, let parsed = PageMessage(body) else { return }
+    onMessage?(message.webView, parsed)
   }
 }
 

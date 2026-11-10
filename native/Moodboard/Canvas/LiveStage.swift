@@ -26,10 +26,10 @@ final class LiveStage {
     self.web = web
   }
 
-  static func url(for id: String, flag: String) -> URL {
-    if let url = ProjectCatalog.url(for: id, flag: flag) { return url }
+  static func url(for id: String, mode: StageMode) -> URL {
+    if let url = ProjectCatalog.url(for: id, mode: mode) { return url }
     var components = URLComponents(url: SchemeHandler.root.appending(path: "stage.html"), resolvingAgainstBaseURL: false)
-    components?.queryItems = [URLQueryItem(name: "demo", value: id), URLQueryItem(name: flag, value: "1")]
+    components?.queryItems = [URLQueryItem(name: "demo", value: id), URLQueryItem(name: mode.rawValue, value: "1")]
     guard let url = components?.url else { fatalError("The stage's address can't be built for \(id)") }
     return url
   }
@@ -40,7 +40,7 @@ final class LiveStage {
     phase = .loading
     isRunning = false
     isHandsOn = false
-    web.load(URLRequest(url: Self.url(for: id, flag: "held")))
+    web.load(URLRequest(url: Self.url(for: id, mode: .held)))
   }
 
   func reload() {
@@ -53,48 +53,48 @@ final class LiveStage {
 
   func markReady() {
     phase = .ready
-    if isHandsOn { send(#"{"type":"drive"}"#) }
+    if isHandsOn { send(.drive) }
     // Hot reload can load the page again by itself, and the new page waits to be told it's on show.
-    else if isRunning { send(#"{"type":"run","run":true}"#) }
+    else if isRunning { send(.run(true)) }
     onReady?()
   }
   func markFailed(_ message: String) { phase = .failed(message) }
 
-  private func send(_ json: String) {
-    web.evaluateJavaScript("window.__host && window.__host(\(json))", completionHandler: nil)
+  private func send(_ command: HostCommand) {
+    web.callAsyncJavaScript("window.__host && window.__host(message)", arguments: ["message": command.json], in: nil, in: .page, completionHandler: nil)
   }
 
   func setRunning(_ running: Bool) {
     guard phase == .ready, running != isRunning else { return }
     isRunning = running
-    send(#"{"type":"run","run":\#(running)}"#)
+    send(.run(running))
   }
 
   /// Hands the component to the person, exactly as it stands. A stage still loading does this once it's ready.
   func handOver() {
     isHandsOn = true
-    if phase == .ready { send(#"{"type":"drive"}"#) }
+    if phase == .ready { send(.drive) }
   }
 
   func startOver() {
-    if phase == .ready { send(#"{"type":"reset"}"#) }
+    if phase == .ready { send(.reset) }
   }
 
   /// Plays the script once, and any movement of the person's pointer over it ends it early.
   func watch() {
-    if phase == .ready { send(#"{"type":"watch"}"#) }
+    if phase == .ready { send(.watch) }
   }
 
   func backToLoop() {
     isHandsOn = false
     guard phase == .ready else { return }
     isRunning = true
-    send(#"{"type":"replay"}"#)
+    send(.replay)
   }
 
   func tune(saved: JSON) {
-    guard phase == .ready, let data = try? JSONSerialization.data(withJSONObject: saved), let text = String(data: data, encoding: .utf8) else { return }
-    send(#"{"type":"tune","saved":\#(text)}"#)
+    guard phase == .ready, JSONSerialization.isValidJSONObject(saved) else { return }
+    send(.tune(saved: saved))
   }
 
   /// Shows the component's crop at this scale. Page zoom keeps the real layout size for its media

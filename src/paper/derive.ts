@@ -51,14 +51,14 @@ function ranked(values: string[], limit: number) {
 
 const px = (value: PaperValue) => (typeof value === "number" ? value : /^-?[\d.]+px$/.test(value) ? Number.parseFloat(value) : null);
 
-function hexOf(value: string) {
+function parseHex(value: string) {
   const match = /^#([\da-f]{6}|[\da-f]{3})/i.exec(value);
   if (!match) return null;
   return match[1].length === 3 ? [...match[1]].map((c) => c + c).join("") : match[1];
 }
 
 function isDark(value: string) {
-  const hex = hexOf(value);
+  const hex = parseHex(value);
   if (!hex) return false;
   const [r, g, b] = [0, 2, 4].map((at) => Number.parseInt(hex.slice(at, at + 2), 16) / 255);
   return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.45;
@@ -127,10 +127,10 @@ export function derive(tree: PaperNode, tokens: PaperToken[]): Derived {
 
   for (const value of ranked(colours, MAX.colors)) {
     const token = tokenOf(value);
-    const key = token ? slug(token).replace(/^color-/, "") : `#${(hexOf(value) ?? slug(value)).toLowerCase()}`;
+    const key = token ? slug(token).replace(/^color-/, "") : `#${(parseHex(value) ?? slug(value)).toLowerCase()}`;
     const cssVar = token ?? `--paper-c-${slug(key.replace("#", ""))}`;
     const rest = resolve(value);
-    folder("Colours")[key] = { type: "color", default: hexOf(rest) ? `#${hexOf(rest)}` : rest };
+    folder("Colours")[key] = { type: "color", default: parseHex(rest) ? `#${parseHex(rest)}` : rest };
     bindings.push({ folder: "Colours", key, cssVar, unit: "" });
     colorVar.set(value, `var(${cssVar})`);
   }

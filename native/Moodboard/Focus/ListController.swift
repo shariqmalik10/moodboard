@@ -164,9 +164,8 @@ final class ListController {
   private let calm = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
 
   private static let sidebarWidth = 256.0
-  static let inspectorWidth = 360.0
   /// How far the floating bar shifts to stay centred over the stage between the sidebar and the dials.
-  static let barOffset = (sidebarWidth - inspectorWidth) / 2
+  static let barOffset = (sidebarWidth - Stand.inspectorWidth) / 2
 
   init(model: AppModel, root: NSView, above canvas: NSView) {
     self.model = model
@@ -310,15 +309,16 @@ final class ListController {
     sidebar?.frame = side
     guard let id = shownId, let item = model.store?.items[id], case .component(let viewport, let crop) = item.body, let stage else { return }
     // The floating bar stands over the top of this area, so the component starts below it.
-    let area = CGRect(x: Self.sidebarWidth, y: 76, width: bounds.width - Self.sidebarWidth - Self.inspectorWidth, height: bounds.height - 76).insetBy(dx: 32, dy: 0)
+    let area = CGRect(x: Self.sidebarWidth, y: 76, width: bounds.width - Self.sidebarWidth - Stand.inspectorWidth, height: bounds.height - 76).insetBy(dx: 32, dy: 0)
     let room = area.height - 68
-    let w = max(120, min(area.width, room / item.aspect, crop.w * 1.6))
+    let w = max(120, Stand.width(of: item, inWidth: area.width, height: room))
     let h = w * item.aspect
     let rect = CGRect(x: area.midX - w / 2, y: area.minY + max(0, (room - h) / 2), width: w, height: h)
     shadow.frame = rect
     clip.frame = shadow.bounds
-    clip.layer?.cornerRadius = TileView.radius * w / Grain.cardWidth
-    shadow.layer?.shadowPath = CGPath(roundedRect: shadow.bounds, cornerWidth: TileView.radius * w / Grain.cardWidth, cornerHeight: TileView.radius * w / Grain.cardWidth, transform: nil)
+    let radius = TileView.radius(forWidth: w)
+    clip.layer?.cornerRadius = radius
+    shadow.layer?.shadowPath = CGPath(roundedRect: shadow.bounds, cornerWidth: radius, cornerHeight: radius, transform: nil)
     stage.present(viewport: viewport, crop: crop, scale: w / crop.w)
     let size = controls.fittingSize
     controls.frame = CGRect(x: rect.midX - size.width / 2, y: rect.maxY + 14, width: size.width, height: size.height)

@@ -46,8 +46,8 @@ function setNight(night: boolean) {
   root.dataset.kTheme = night ? "night" : "paper";
 }
 
-/** Any colour the browser understands, as the hex the app reads. */
-function hexOf(colour: string) {
+/** Any colour the browser understands, as the `#rrggbb` the app reads. */
+function canvasHex(colour: string) {
   const context = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
   if (!context) return "#ffffff";
   context.fillStyle = colour;
@@ -65,13 +65,26 @@ function measureContent(host: HTMLElement) {
   const isClear = (colour: string) => colour === "transparent" || /rgba\(0, 0, 0, 0\)/.test(colour);
   const fromBody = getComputedStyle(document.body).backgroundColor;
   const fromPage = getComputedStyle(document.documentElement).backgroundColor;
-  return { width, height, ground: hexOf(isClear(fromBody) ? (isClear(fromPage) ? "#ffffff" : fromPage) : fromBody), blank: boxes.length === 0 || tiny };
+  return { width, height, ground: canvasHex(isClear(fromBody) ? (isClear(fromPage) ? "#ffffff" : fromPage) : fromBody), blank: boxes.length === 0 || tiny };
+}
+
+/** How the app loaded this page: `StageMode` on the Swift side. A page opened anywhere else runs freely. */
+type Mode = "held" | "still" | "measure" | "free";
+
+function modeOf(params: URLSearchParams): Mode {
+  if (params.has("measure")) return "measure";
+  if (params.has("still")) return "still";
+  if (params.has("held")) return "held";
+  return "free";
 }
 
 async function boot() {
   const params = new URLSearchParams(location.search);
+  const mode = modeOf(params);
+  // `still` and `held` show the component at rest first, `held` waiting to be told to run.
+  const shownFirst = mode === "still" || mode === "held";
   // A generated entrance waits until the component is really on show, so its first frame always matches the plate.
-  if (params.has("still") || params.has("held")) document.documentElement.dataset.still = "";
+  if (shownFirst) document.documentElement.dataset.still = "";
   const demo = await resolveDemo(params.get("demo") ?? "");
   const saved = await savedDials(demo.id);
   isolateStorage();
@@ -112,17 +125,17 @@ async function boot() {
     host.style.opacity = "1";
   });
 
-  if (params.has("measure")) document.documentElement.dataset.measuring = "";
+  if (mode === "measure") document.documentElement.dataset.measuring = "";
   mount();
   await Promise.race([document.fonts.ready, pause(600)]);
   await frame();
   demo.afterMount?.();
-  if (params.has("measure")) {
+  if (mode === "measure") {
     await pause(120);
     tell({ type: "measured", id: demo.id, ...measureContent(host) });
     return;
   }
-  if (params.has("still")) {
+  if (mode === "still") {
     document.documentElement.dataset.still = "";
     // A plate taken before the art arrives keeps its placeholder until the tune changes, and a page nobody can see never starts a lazy image.
     const images = [...document.images];
@@ -132,10 +145,9 @@ async function boot() {
 
   // `still` holds the component at rest, for the plate the app forms a tile from. `held` waits to be told to run.
   const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const shownFirst = params.has("still") || params.has("held");
-  if (params.has("held")) director.setPaused(true);
+  if (mode === "held") director.setPaused(true);
   if (shownFirst && demo.pose) await director.pose(demo.pose);
-  if (!calm && !params.has("still")) director.start(shownFirst ? demo.pose : 0);
+  if (!calm && mode !== "still") director.start(shownFirst ? demo.pose : 0);
   (window as unknown as { __structure: (crop: Crop) => unknown }).__structure = readStructure;
   tell({ type: "ready", id: demo.id });
 
@@ -149,19 +161,29 @@ async function boot() {
   };
 
   onHost((message) => {
-    if (message.type === "run") director.setPaused(!message.run);
-    if (message.type === "tune") tune(resolveValues(demo.dials.config, message.saved));
-    if (message.type === "replay") {
-      remount();
-      director.setPaused(false);
-      director.start();
-    }
-    if (message.type === "drive") director.stop();
-    if (message.type === "reset") void startOver();
-    if (message.type === "watch") {
-      remount();
-      director.setPaused(false);
-      director.start(0, true);
+    switch (message.type) {
+      case "run":
+        director.setPaused(!message.run);
+        break;
+      case "tune":
+        tune(resolveValues(demo.dials.config, message.saved));
+        break;
+      case "replay":
+        remount();
+        director.setPaused(false);
+        director.start();
+        break;
+      case "drive":
+        director.stop();
+        break;
+      case "reset":
+        void startOver();
+        break;
+      case "watch":
+        remount();
+        director.setPaused(false);
+        director.start(0, true);
+        break;
     }
   });
 

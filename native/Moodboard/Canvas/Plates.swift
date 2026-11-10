@@ -172,11 +172,11 @@ final class PlateStore {
     return baker
   }
 
-  func handle(_ web: WKWebView?, message: JSON) {
+  func handle(_ web: WKWebView?, message: PageMessage) {
     guard let baker = bakers.first(where: { $0.web === web }) else { return }
-    switch message["type"] as? String {
-    case "ready": Task { await complete(baker) }
-    case "failed": fail(baker, message["message"] as? String ?? "It didn't load.")
+    switch message {
+    case .ready: Task { await complete(baker) }
+    case .failed(_, let reason): fail(baker, reason)
     default: break
     }
   }
@@ -229,7 +229,7 @@ private final class Baker {
     guard case .component(let viewport, _) = item.body else { return }
     id = item.id
     web.frame = CGRect(x: 0, y: 0, width: viewport.w, height: viewport.h)
-    web.load(URLRequest(url: LiveStage.url(for: item.id, flag: "still")))
+    web.load(URLRequest(url: LiveStage.url(for: item.id, mode: .still)))
   }
 
   func reset() {

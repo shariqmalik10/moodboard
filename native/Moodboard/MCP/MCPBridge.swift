@@ -15,61 +15,78 @@ enum MCPBridge {
     A component whose id starts with project/ runs from a connected repository. Its file is in place.file. Your saved edits show on the wall at once. set_dials on it edits that file directly, so there's nothing to build and no need for mark_built.
     """
 
-  private static let tools: [JSON] = [
-    tool("status", "Says what the wall has open, how many components it holds, and what Paper has open and selected. Use it to orient yourself."),
-    tool("list_components", "Lists every component on the wall with its id, title and project, and where it stands: tuned (how many dials moved), needsBuilding, note, paper (current or changed), and builtAt with changedSinceBuilt."),
-    tool(
-      "get_component",
-      "Gets a component as the person tuned it. Returns markdown (the brief to build from), note (what the person wants, if they left one), place (where it stands in the loop), changes (each dial moved, from and to), dials (every dial path), css, jsx (the design with the tune applied, for a design from Paper) and source. With no id, it gets the component the person has open.",
-      ["id": string("Component id. Leave it out for the one open on the wall.")]
-    ),
-    tool(
-      "import_from_paper",
-      "Puts a design from Paper on the wall with generated dials, reading Paper and never changing it. With no arguments it imports what's selected in Paper. Importing the same design again updates it and keeps its tune. It doesn't open the wall's window or take focus.",
-      [
-        "frame": string("Name of a frame on the current Paper page."),
-        "fileId": string("Paper file id. Pass it with nodeId for a node you just wrote to Paper."),
-        "nodeId": string("Paper node id. Pass it with fileId."),
-      ]
-    ),
-    tool(
-      "open_component",
-      "Brings the wall forward, scrolls to a component and opens it with its dials. This takes focus, so use it when the person asks to see something.",
-      ["id": string("Component id. Leave it out for the one already open.")]
-    ),
-    tool(
-      "set_dials",
-      "Moves dials on a component, and the running component and any open panel follow. Only do this when the person asks. Returns every dial now changed from its default.",
-      [
-        "id": string("Component id. Leave it out for the one open on the wall."),
-        "values": ["type": "object", "description": "Dial paths from get_component's dials, with their new values, such as {\"Type.17 px\": 20}."] as JSON,
-      ],
-      required: ["values"]
-    ),
-    tool(
-      "set_note",
-      "Writes the note on a component, or clears it with an empty string. Clear a note once you've done what it asks. Don't overwrite a note the person wrote unless they ask.",
-      ["id": string("Component id. Leave it out for the one open on the wall."), "note": string("The note. An empty string clears it.")],
-      required: ["note"]
-    ),
-    tool(
-      "connect_project",
-      "Connects a Next.js project on this Mac and waits up to 45 seconds for its components to join the wall as live tiles. Saved edits to them show at once, and moving a dial edits the source file. It adds nothing to the project's folder. A folder inside an app, or a monorepo with one app, connects that app. Connecting a project again is safe, and retries one that stopped. The result says how many components are on the wall, which aren't and why, any problem, and what to do next. It opens Moodboard behind other windows if it's closed.",
-      ["path": string("The project's folder. A relative path starts from the folder Claude Code is working in. Leave it out to connect that folder.")]
-    ),
-    tool("list_projects", "Lists connected projects: how many components are on the wall, which aren't and why, and any problem running them."),
-    tool(
-      "disconnect_project",
-      "Disconnects a project and takes its tiles off the wall. The project's files stay as they are.",
-      ["project": string("The project's name, id or folder, from list_projects.")],
-      required: ["project"]
-    ),
-    tool(
-      "mark_built",
-      "Records that this component's current tune and design are now in code, and clears its note. The wall then shows it as built until the tune or design changes.",
-      ["id": string("Component id. Leave it out for the one open on the wall."), "repository": string("Absolute path of the repository it went into."), "summary": string("One line on what was done.")]
-    ),
-  ]
+  private static var tools: [JSON] { ToolName.allCases.map(schema) }
+
+  /// What Claude Code reads about each tool. The switch is exhaustive, so a new tool can't go undescribed.
+  private static func schema(_ kind: ToolName) -> JSON {
+    let name = kind.rawValue
+    return switch kind {
+    case .status:
+      tool(name, "Says what the wall has open, how many components it holds, and what Paper has open and selected. Use it to orient yourself.")
+    case .listComponents:
+      tool(name, "Lists every component on the wall with its id, title and project, and where it stands: tuned (how many dials moved), needsBuilding, note, paper (current or changed), and builtAt with changedSinceBuilt.")
+    case .getComponent:
+      tool(
+        name,
+        "Gets a component as the person tuned it. Returns markdown (the brief to build from), note (what the person wants, if they left one), place (where it stands in the loop), changes (each dial moved, from and to), dials (every dial path), css, jsx (the design with the tune applied, for a design from Paper) and source. With no id, it gets the component the person has open.",
+        ["id": string("Component id. Leave it out for the one open on the wall.")]
+      )
+    case .importFromPaper:
+      tool(
+        name,
+        "Puts a design from Paper on the wall with generated dials, reading Paper and never changing it. With no arguments it imports what's selected in Paper. Importing the same design again updates it and keeps its tune. It doesn't open the wall's window or take focus.",
+        [
+          "frame": string("Name of a frame on the current Paper page."),
+          "fileId": string("Paper file id. Pass it with nodeId for a node you just wrote to Paper."),
+          "nodeId": string("Paper node id. Pass it with fileId."),
+        ]
+      )
+    case .openComponent:
+      tool(
+        name,
+        "Brings the wall forward, scrolls to a component and opens it with its dials. This takes focus, so use it when the person asks to see something.",
+        ["id": string("Component id. Leave it out for the one already open.")]
+      )
+    case .setDials:
+      tool(
+        name,
+        "Moves dials on a component, and the running component and any open panel follow. Only do this when the person asks. Returns every dial now changed from its default.",
+        [
+          "id": string("Component id. Leave it out for the one open on the wall."),
+          "values": ["type": "object", "description": "Dial paths from get_component's dials, with their new values, such as {\"Type.17 px\": 20}."] as JSON,
+        ],
+        required: ["values"]
+      )
+    case .setNote:
+      tool(
+        name,
+        "Writes the note on a component, or clears it with an empty string. Clear a note once you've done what it asks. Don't overwrite a note the person wrote unless they ask.",
+        ["id": string("Component id. Leave it out for the one open on the wall."), "note": string("The note. An empty string clears it.")],
+        required: ["note"]
+      )
+    case .connectProject:
+      tool(
+        name,
+        "Connects a Next.js project on this Mac and waits up to 45 seconds for its components to join the wall as live tiles. Saved edits to them show at once, and moving a dial edits the source file. It adds nothing to the project's folder. A folder inside an app, or a monorepo with one app, connects that app. Connecting a project again is safe, and retries one that stopped. The result says how many components are on the wall, which aren't and why, any problem, and what to do next. It opens Moodboard behind other windows if it's closed.",
+        ["path": string("The project's folder. A relative path starts from the folder Claude Code is working in. Leave it out to connect that folder.")]
+      )
+    case .listProjects:
+      tool(name, "Lists connected projects: how many components are on the wall, which aren't and why, and any problem running them.")
+    case .disconnectProject:
+      tool(
+        name,
+        "Disconnects a project and takes its tiles off the wall. The project's files stay as they are.",
+        ["project": string("The project's name, id or folder, from list_projects.")],
+        required: ["project"]
+      )
+    case .markBuilt:
+      tool(
+        name,
+        "Records that this component's current tune and design are now in code, and clears its note. The wall then shows it as built until the tune or design changes.",
+        ["id": string("Component id. Leave it out for the one open on the wall."), "repository": string("Absolute path of the repository it went into."), "summary": string("One line on what was done.")]
+      )
+    }
+  }
 
   private static let prompts: [JSON] = [
     [
@@ -148,7 +165,7 @@ enum MCPBridge {
   private static func callTool(_ name: String, _ arguments: JSON) -> JSON {
     do {
       var arguments = arguments
-      if name == "connect_project" { arguments["path"] = try projectPath(arguments["path"] as? String) }
+      if name == ToolName.connectProject.rawValue { arguments["path"] = try projectPath(arguments["path"] as? String) }
       let result = try WallSocket.ask(name, arguments)
       let data = try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys, .fragmentsAllowed, .withoutEscapingSlashes])
       return ["content": [["type": "text", "text": String(decoding: data, as: UTF8.self)]]]
