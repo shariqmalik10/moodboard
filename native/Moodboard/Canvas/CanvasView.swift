@@ -21,10 +21,9 @@ final class CanvasView: NSView {
   private let world = WorldView()
 
   private(set) var camera: Camera
+  /// Where the camera is easing to. A flight keeps it on the camera.
   private var target: Camera
-  private var fling: CGVector = .zero
-  private var flight: (x: Spring, y: Spring, z: Spring)?
-  private var isWheel = false
+  private var motion = CameraMotion.easing(momentum: .zero, wheel: false)
   private var mounted: [Instance.Key: TileView] = [:]
   private var spare: [TileView] = []
   private var link: CADisplayLink?
@@ -296,7 +295,7 @@ final class CanvasView: NSView {
     if stats.isRecording { stats.record(interval: interval, cost: CACurrentMediaTime() - began, step: distance) }
 
     busyTiles = tilesMoving
-    if !moved, !tilesMoving, target == camera, flight == nil, fling == .zero, !stats.isRecording {
+    if !moved, !tilesMoving, target == camera, motion.isResting, !stats.isRecording {
       link.isPaused = true
       lastTick = 0
       onSettle?()
@@ -304,21 +303,26 @@ final class CanvasView: NSView {
   }
 
   private func step(_ dt: Double) {
-    if var going = flight {
-      going.x.step(dt)
-      going.y.step(dt)
-      going.z.step(dt)
-      target = Camera(x: going.x.value, y: going.y.value, z: going.z.value)
+    var (momentum, wheel) = (CGVector.zero, false)
+    switch motion {
+    case .flying(var x, var y, var z):
+      x.step(dt)
+      y.step(dt)
+      z.step(dt)
+      target = Camera(x: x.value, y: y.value, z: z.value)
       camera = target
-      flight = going.x.isSettled && going.y.isSettled && going.z.isSettled ? nil : going
+      motion = x.isSettled && y.isSettled && z.isSettled ? .easing(momentum: .zero, wheel: false) : .flying(x: x, y: y, z: z)
       return
+    case .easing(let going, let isWheel):
+      (momentum, wheel) = (going, isWheel)
     }
-    if fling != .zero {
-      target.x += fling.dx * dt
-      target.y += fling.dy * dt
+    if momentum != .zero {
+      target.x += momentum.dx * dt
+      target.y += momentum.dy * dt
       let decay = pow(0.998, dt * 1000)
-      fling = CGVector(dx: fling.dx * decay, dy: fling.dy * decay)
-      if abs(fling.dx) < 4, abs(fling.dy) < 4 { fling = .zero }
+      momentum = CGVector(dx: momentum.dx * decay, dy: momentum.dy * decay)
+      if abs(momentum.dx) < 4, abs(momentum.dy) < 4 { momentum = .zero }
+      motion = .easing(momentum: momentum, wheel: wheel)
     }
     if let limits = arrangement.scrollLimits(viewHeight: bounds.height) {
       target.x = 0
@@ -327,9 +331,7 @@ final class CanvasView: NSView {
       let over = nearest - target.y
       target.y = abs(over) < 0.25 ? nearest : target.y + over * (1 - exp(-dt * (1 + abs(over) / 40) / 0.07))
     }
-    // A trackpad's own events already carry the system's momentum, so they get only enough smoothing
-    // to bridge the gaps between events and frames. A mouse wheel jumps in big steps and gets more.
-    let tau = isWheel ? 0.07 : 0.011
+    let tau = wheel ? 0.07 : 0.011
     let share = 1 - exp(-dt / tau)
     camera.x += (target.x - camera.x) * share
     camera.y += (target.y - camera.y) * share
@@ -506,7 +508,9 @@ final class CanvasView: NSView {
     return arrangement.cards(in: viewRect(margin: arrangement.span)).filter { $0.id == id }.map(\.rect).min { distance($0) < distance($1) }
   }
 
-  var isFlying: Bool { flight != nil }
+  var isFlying: Bool {
+    if case .flying = motion { true } else { false }
+  }
 
   func worldHost() -> NSView { world }
 
@@ -527,9 +531,8 @@ final class CanvasView: NSView {
       zoom(at: point, factor: exp(event.scrollingDeltaY * 0.006))
       return
     }
-    flight = nil
-    fling = .zero
-    isWheel = !event.hasPreciseScrollingDeltas
+    let isWheel = !event.hasPreciseScrollingDeltas
+    motion = .easing(momentum: .zero, wheel: isWheel)
     let scale = isWheel ? 14.0 : 1.0
     target.x += event.scrollingDeltaX * scale
     target.y += event.scrollingDeltaY * scale
@@ -543,11 +546,10 @@ final class CanvasView: NSView {
 
   func zoom(at point: CGPoint, factor: Double) {
     guard arrangement.isEndless else { return }
-    flight = nil
+    motion = .easing(momentum: motion.momentum, wheel: false)
     let z = min(Self.maxZoom, max(Self.minZoom, target.z * factor))
     let k = z / target.z
     target = Camera(x: point.x - (point.x - target.x) * k, y: point.y - (point.y - target.y) * k, z: z)
-    isWheel = false
     wake()
   }
 
@@ -557,19 +559,18 @@ final class CanvasView: NSView {
 
   /// Glides somewhere with a spring that starts from wherever the camera is now.
   func fly(to next: Camera, response: Double = 0.55) {
-    fling = .zero
     var x = Spring(camera.x, response: response)
     var y = Spring(camera.y, response: response)
     var z = Spring(camera.z, response: response)
     x.target = next.x
     y.target = next.y
     z.target = next.z
-    if let going = flight {
-      x.velocity = going.x.velocity
-      y.velocity = going.y.velocity
-      z.velocity = going.z.velocity
+    if case .flying(let going, let goingY, let goingZ) = motion {
+      x.velocity = going.velocity
+      y.velocity = goingY.velocity
+      z.velocity = goingZ.velocity
     }
-    flight = (x, y, z)
+    motion = .flying(x: x, y: y, z: z)
     wake()
   }
 
@@ -605,8 +606,7 @@ final class CanvasView: NSView {
   }
 
   func panBy(dx: Double, dy: Double) {
-    flight = nil
-    isWheel = true
+    motion = .easing(momentum: motion.momentum, wheel: true)
     target.x += dx
     target.y += dy
     wake()
@@ -616,8 +616,7 @@ final class CanvasView: NSView {
     clearKeyboardFocus()
     guard !isLocked else { return }
     window?.makeFirstResponder(self)
-    flight = nil
-    fling = .zero
+    motion = .easing(momentum: .zero, wheel: false)
     target = camera
     let point = convert(event.locationInWindow, from: nil)
     let pressed = tile(at: point)
@@ -638,10 +637,10 @@ final class CanvasView: NSView {
     if going.moved {
       let dt = max(event.timestamp - going.lastTime, 0.001)
       let (dx, dy) = (point.x - going.last.x, point.y - going.last.y)
-      isWheel = false
       target.x += dx
       target.y += dy
-      fling = CGVector(dx: fling.dx * 0.6 + dx / dt * 0.4, dy: fling.dy * 0.6 + dy / dt * 0.4)
+      let fling = motion.momentum
+      motion = .easing(momentum: CGVector(dx: fling.dx * 0.6 + dx / dt * 0.4, dy: fling.dy * 0.6 + dy / dt * 0.4), wheel: false)
     }
     going.last = point
     going.lastTime = event.timestamp
@@ -656,11 +655,11 @@ final class CanvasView: NSView {
     busyTiles = true
     if going.moved {
       NSCursor.pop()
-      if event.timestamp - going.lastTime > 0.08 { fling = .zero }
+      if event.timestamp - going.lastTime > 0.08 { motion = .easing(momentum: .zero, wheel: false) }
       wake()
       return
     }
-    fling = .zero
+    motion = .easing(momentum: .zero, wheel: false)
     wake()
     if let key = going.pressed, let tile = mounted[key] { onOpen?(tile) }
   }
@@ -728,8 +727,7 @@ final class CanvasView: NSView {
   }
 
   func setCamera(_ next: Camera) {
-    flight = nil
-    fling = .zero
+    motion = .easing(momentum: .zero, wheel: false)
     camera = next
     target = next
     busyTiles = true
@@ -756,5 +754,21 @@ final class CanvasView: NSView {
       "mode": mode.rawValue, "hovered": hovered?.id ?? NSNull(), "headings": arrangement.headings.map(\.title), "span": arrangement.span,
       "homes": mounted.values.map { ["id": $0.item?.id ?? "", "x": $0.home.minX, "y": $0.home.minY, "w": $0.home.width, "h": $0.home.height] as JSON },
     ]
+  }
+}
+
+/// How the camera is moving. It eases toward its target, or flies there on springs, never both.
+private enum CameraMotion {
+  /// Drifts on `momentum` a drag left behind. A trackpad's own events already carry the system's momentum, so they
+  /// get only enough smoothing to bridge the gaps between events and frames. A mouse wheel jumps in big steps and gets more.
+  case easing(momentum: CGVector, wheel: Bool)
+  case flying(x: Spring, y: Spring, z: Spring)
+
+  var momentum: CGVector {
+    if case .easing(let momentum, _) = self { momentum } else { .zero }
+  }
+
+  var isResting: Bool {
+    if case .easing(.zero, _) = self { true } else { false }
   }
 }
