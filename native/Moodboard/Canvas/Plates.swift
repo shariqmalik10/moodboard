@@ -42,9 +42,7 @@ extension Piece {
 /// Bakes plates off to the side, a few at a time, and keeps them on disk for the next launch.
 final class PlateStore {
   private let build: String
-  private var plates: [String: Plate] = [:]
-  private var keys: [String: String] = [:]
-  private var failed: [String: String] = [:]
+  private var entries: [String: Entry] = [:]
   private let bakers: BackstageWorkers<String>
   private var items: (String) -> Item?
 
@@ -90,20 +88,20 @@ final class PlateStore {
     return Paths.fileName(for: id) + "-" + stableHash(data + record)
   }
 
-  func plate(for id: String) -> Plate? { plates[id] }
-  func failure(for id: String) -> String? { failed[id] }
+  func plate(for id: String) -> Plate? { entries[id]?.plate }
+  func failure(for id: String) -> String? { entries[id]?.failure }
   var pending: Int { bakers.pending }
-  var bakedCount: Int { plates.count }
+  var bakedCount: Int { entries.values.count { $0.plate != nil } }
 
   /// Asks for a plate. `first` puts it ahead of everything waiting, for a tile the person can see.
   func request(_ id: String, first: Bool = false) {
     if let item = items(id), case .material(let material) = item.body {
-      guard plates[id] == nil else { return }
+      guard entries[id]?.plate == nil else { return }
       Task { await loadMaterial(id, material: material) }
       return
     }
     let wanted = key(for: id)
-    if keys[id] == wanted, plates[id] != nil { return }
+    if let entry = entries[id], entry.plate != nil, entry.key == wanted { return }
     if bakers.queue.contains(id) {
       if first {
         bakers.removeQueued { $0 == id }
@@ -119,27 +117,29 @@ final class PlateStore {
 
   /// Bakes a plate and waits for it, or gives up after a few seconds and lets the wall carry on.
   func bake(_ id: String) async {
-    failed[id] = nil
+    entries[id]?.failure = nil
     request(id, first: true)
-    for _ in 0..<80 {
-      if plates[id] != nil || failed[id] != nil { return }
-      try? await Task.sleep(for: .milliseconds(50))
+    guard entries[id]?.plate == nil, entries[id]?.failure == nil else { return }
+    let ticket = UUID()
+    let timeout = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(4))
+      self?.entries[id]?.waiting.removeValue(forKey: ticket)?.resume()
     }
+    await withCheckedContinuation { entries[id, default: Entry()].waiting[ticket] = $0 }
+    timeout.cancel()
   }
 
   /// The component's look changed, so the next plate has to come from the new tune.
   func invalidate(_ id: String) {
-    keys[id] = nil
+    entries[id]?.key = nil
     request(id, first: true)
   }
 
   private func loadMaterial(_ id: String, material: Material) async {
     guard let image = await MaterialStore.picture(of: material) else {
-      failed[id] = "\(material.title) couldn't be read."
-      return
+      return settle(id) { $0.failure = "\(material.title) couldn't be read." }
     }
-    plates[id] = Plate(image: image, pieces: MaterialStore.grid(for: material))
-    if let plate = plates[id] { onPlate?(id, plate) }
+    finish(id, key: nil, plate: Plate(image: image, pieces: MaterialStore.grid(for: material)))
   }
 
   private func loadFromDisk(_ id: String, key: String) -> Bool {
@@ -154,15 +154,27 @@ final class PlateStore {
     return true
   }
 
-  private func finish(_ id: String, key: String, plate: Plate) {
-    plates[id] = plate
-    keys[id] = key
-    failed[id] = nil
+  private func finish(_ id: String, key: String?, plate: Plate) {
+    settle(id) {
+      $0.plate = plate
+      $0.key = key
+      $0.failure = nil
+    }
     onPlate?(id, plate)
   }
 
+  /// Records how a bake ended, and lets anyone waiting on it carry on.
+  private func settle(_ id: String, _ change: (inout Entry) -> Void) {
+    var entry = entries[id] ?? Entry()
+    change(&entry)
+    let waiting = entry.waiting.values
+    entry.waiting = [:]
+    entries[id] = entry
+    waiting.forEach { $0.resume() }
+  }
+
   private func fail(_ baker: BackstageWorkers<String>.Worker, _ id: String, _ reason: String) {
-    failed[id] = reason
+    settle(id) { $0.failure = reason }
     bakers.release(baker)
     bakers.pump()
   }
@@ -175,7 +187,7 @@ final class PlateStore {
       finish(id, key: wanted, plate: plate)
       store(plate, as: wanted)
     } catch {
-      failed[id] = error.localizedDescription
+      settle(id) { $0.failure = error.localizedDescription }
     }
     bakers.release(baker)
     // Tuned or re-imported while the picture was being taken, so that picture is already out of date.
@@ -190,6 +202,16 @@ final class PlateStore {
     CGImageDestinationAddImage(destination, plate.image, nil)
     CGImageDestinationFinalize(destination)
   }
+}
+
+/// One component's plate. A new tune keeps the old picture on show until the new one is baked.
+private struct Entry {
+  var plate: Plate?
+  /// The tune `plate` was taken from, or nil once that tune is out of date. A material has none.
+  var key: String?
+  var failure: String?
+  /// `bake` calls waiting for this bake to end.
+  var waiting: [UUID: CheckedContinuation<Void, Never>] = [:]
 }
 
 /// Takes a baked component's picture, and the parts it's made of, at the size its tile shows them.
