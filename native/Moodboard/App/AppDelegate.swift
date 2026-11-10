@@ -217,9 +217,8 @@ final class AppModel {
     var filter = nextFilter ?? chrome.state.filter
     if mode == .list, filter == .project("material") { filter = .all }
     if focus.tile != nil {
-      focus.close()
       Task {
-        while focus.tile != nil { try? await Task.sleep(for: .milliseconds(30)) }
+        await focus.closeAndWait()
         show(mode, filter: filter)
       }
       return

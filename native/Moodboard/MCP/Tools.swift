@@ -158,8 +158,7 @@ final class Tools {
       return ["open": id]
     }
     guard let home = canvas.homeRect(for: id) else { throw ToolError("\(id) isn't on the wall.") }
-    focus.close()
-    for _ in 0..<40 where focus.tile != nil { try await Task.sleep(for: .milliseconds(50)) }
+    await focus.closeAndWait()
     canvas.bringIntoView(home)
     for _ in 0..<40 {
       if let tile = canvas.tile(forItem: id), !canvas.isFlying { focus.open(tile); return ["open": id] }

@@ -12,8 +12,25 @@ final class FocusController {
   private var optionMonitor: Any?
   let inspector: InspectorView
 
-  private(set) var tile: TileView?
-  private var isClosing = false
+  /// Where the focus view stands. A tile flies out in `open`, flies home in `closing`, and the list view
+  /// keeps the dials for a component it has in hand in `pinned`, with no flight and no scrim.
+  private enum Phase {
+    case closed
+    case open(TileView)
+    case closing(TileView)
+    case pinned(String)
+  }
+
+  private var phase = Phase.closed
+  private var whenClosed: [CheckedContinuation<Void, Never>] = []
+
+  /// The tile out of the wall, whether it stands open or is flying home.
+  var tile: TileView? {
+    switch phase {
+    case .open(let tile), .closing(let tile): tile
+    case .closed, .pinned: nil
+    }
+  }
   private var x = Spring(0, response: 0.46, damping: 0.92)
   private var y = Spring(0, response: 0.46, damping: 0.92)
   private var scale = Spring(1, response: 0.46, damping: 0.92)
@@ -21,7 +38,6 @@ final class FocusController {
   private var finalScale = 1.0
   private var calm = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
   private var dialsChanged = false
-  private var pendingWrite: Task<Void, Never>?
 
   private static let controlsSpace = 52.0
 
@@ -51,13 +67,17 @@ final class FocusController {
     layoutInspector()
   }
 
-  var openItemId: String? { pinnedId ?? (isClosing ? nil : tile?.item?.id) }
+  var openItemId: String? {
+    switch phase {
+    case .open(let tile): tile.item?.id
+    case .pinned(let id): id
+    case .closed, .closing: nil
+    }
+  }
 
-  /// Keeps the dials showing for a component the list view has in hand, with no flight and no scrim.
-  private var pinnedId: String?
-
+  /// Keeps the dials showing for a component the list view has in hand.
   func pin(_ item: Item) {
-    pinnedId = item.id
+    phase = .pinned(item.id)
     progress = Spring(1, response: progress.response)
     inspector.alphaValue = 1
     inspector.isHidden = false
@@ -70,8 +90,8 @@ final class FocusController {
   }
 
   func unpin() {
-    guard pinnedId != nil else { return }
-    pinnedId = nil
+    guard case .pinned = phase else { return }
+    phase = .closed
     progress = Spring(0, response: progress.response)
     inspector.isHidden = true
     inspector.model.isPinned = false
@@ -102,16 +122,15 @@ final class FocusController {
 
   func open(_ next: TileView) {
     guard let canvas = model.canvas, let item = next.item else { return }
-    if tile === next, isClosing {
-      isClosing = false
+    if case .closing(let closing) = phase, closing === next {
+      phase = .open(next)
       next.acceptsPointer = true
       next.stage?.web.isInteractive = true
       setTargets(detailRect(for: item))
       return
     }
-    guard tile == nil else { return }
-    tile = next
-    isClosing = false
+    guard case .closed = phase else { return }
+    phase = .open(next)
     canvas.isLocked = true
     canvas.ensureStage(for: next)
 
@@ -158,9 +177,9 @@ final class FocusController {
   }
 
   func close() {
-    guard let tile, !isClosing, let canvas = model.canvas else { return }
+    guard case .open(let tile) = phase, let canvas = model.canvas else { return }
     releaseBefore()
-    isClosing = true
+    phase = .closing(tile)
     tile.acceptsPointer = false
     tile.stage?.web.isInteractive = false
     let home = canvas.screenRect(of: tile.home)
@@ -190,7 +209,7 @@ final class FocusController {
     controls.alphaValue = progress.value
     layoutInspector()
     let settled = x.isSettled && y.isSettled && scale.isSettled && progress.isSettled
-    if settled, isClosing { finishClosing(tile) }
+    if settled, case .closing = phase { finishClosing(tile) }
     return !settled
   }
 
@@ -199,8 +218,7 @@ final class FocusController {
     canvas.worldHost().addSubview(tile)
     tile.land()
     tile.stage?.backToLoop()
-    self.tile = nil
-    isClosing = false
+    phase = .closed
     host.isHidden = true
     scrim.isHidden = true
     controls.isHidden = true
@@ -210,6 +228,15 @@ final class FocusController {
     if dialsChanged, let id = tile.item?.id { model.plates?.invalidate(id) }
     dialsChanged = false
     canvas.wake()
+    whenClosed.forEach { $0.resume() }
+    whenClosed = []
+  }
+
+  /// Closes what's open and returns once the tile has landed back on the wall.
+  func closeAndWait() async {
+    close()
+    guard case .closing = phase else { return }
+    await withCheckedContinuation { whenClosed.append($0) }
   }
 
   private func placeControls(under rect: CGRect, for item: Item) {
@@ -221,7 +248,7 @@ final class FocusController {
   /// Keeps an open tile fitted to the window as the window changes size.
   func windowResized() {
     layoutInspector()
-    guard let tile, !isClosing, let item = tile.item else { return }
+    guard case .open(let tile) = phase, let item = tile.item else { return }
     let target = detailRect(for: item)
     finalScale = target.width / Grain.cardWidth
     tile.raise(scale: finalScale)
@@ -298,7 +325,13 @@ final class FocusController {
   }
 
   /// The component being used right now, wherever it stands.
-  private var handsOnStage: LiveStage? { tile?.stage ?? (pinnedId == nil ? nil : model.list?.stage) }
+  private var handsOnStage: LiveStage? {
+    switch phase {
+    case .open(let tile), .closing(let tile): tile.stage
+    case .pinned: model.list?.stage
+    case .closed: nil
+    }
+  }
 
   private func holdBefore(_ held: Bool) {
     guard let id = openItemId, inspector.model.showsBefore != held else { return }
@@ -344,24 +377,13 @@ final class FocusController {
   }
 
   private func removeOpenItem() {
-    if let id = pinnedId {
+    if case .pinned(let id) = phase {
       take(id)
       return
     }
     guard let id = tile?.item?.id else { return }
-    pendingRemoval = id
-    close()
-  }
-
-  private var pendingRemoval: String? {
-    didSet { checkRemoval() }
-  }
-
-  private func checkRemoval() {
-    guard let id = pendingRemoval else { return }
-    pendingRemoval = nil
     Task {
-      while tile != nil { try? await Task.sleep(for: .milliseconds(30)) }
+      await closeAndWait()
       take(id)
     }
   }
@@ -379,6 +401,7 @@ final class FocusController {
     let pill = controls.frame
     var crop: JSON?
     if case .component(_, let box)? = tile?.item?.body { crop = ["x": box.x, "y": box.y, "w": box.w, "h": box.h] }
+    let isClosing = if case .closing = phase { true } else { false }
     return ["crop": crop ?? NSNull(), "open": tile != nil, "closing": isClosing, "x": x.value, "y": y.value, "scale": scale.value, "progress": progress.value, "velocityX": x.velocity, "controls": ["x": pill.minX, "y": pill.minY, "w": pill.width, "h": pill.height] as JSON]
   }
 
@@ -399,7 +422,7 @@ final class FocusController {
 
   /// A click on the tile while it flies home brings it back, from wherever it has reached.
   func reopenIfHit(_ point: CGPoint) -> Bool {
-    guard let tile, isClosing else { return false }
+    guard case .closing(let tile) = phase else { return false }
     let width = Grain.cardWidth * scale.value
     let height = (tile.item?.height ?? 0) * scale.value
     guard CGRect(x: x.value, y: y.value, width: width, height: height).contains(point) else { return false }

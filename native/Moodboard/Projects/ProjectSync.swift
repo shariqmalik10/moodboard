@@ -213,10 +213,7 @@ final class ProjectSync {
   func disconnect(slug: String) {
     guard let project = ProjectCatalog.project(slug: slug) else { return }
     Task {
-      if let open = app.focus?.openItemId, ProjectCatalog.project(of: open)?.slug == slug {
-        app.focus?.close()
-        while app.focus?.tile != nil { try? await Task.sleep(for: .milliseconds(30)) }
-      }
+      if let open = app.focus?.openItemId, ProjectCatalog.project(of: open)?.slug == slug { await app.focus?.closeAndWait() }
       servers[slug]?.stop()
       servers[slug] = nil
       queue.removeAll { $0.slug == slug }
@@ -349,10 +346,7 @@ final class ProjectSync {
 
   private func drop(_ ids: Set<String>, slug: String) {
     Task {
-      if let open = app.focus?.openItemId, ids.contains(open) {
-        app.focus?.close()
-        while app.focus?.tile != nil { try? await Task.sleep(for: .milliseconds(30)) }
-      }
+      if let open = app.focus?.openItemId, ids.contains(open) { await app.focus?.closeAndWait() }
       ProjectCatalog.edit(slug: slug) { $0.components.removeAll { ids.contains($0.id) } }
       for id in ids {
         DialState.write(id, nil)
