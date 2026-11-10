@@ -38,9 +38,8 @@ final class CanvasView: NSView {
   var stats = FrameStats()
   private var keyboardKey: Instance.Key?
   private var arrangement: any Arrangement
-  private(set) var mode = ViewMode.wall
-  private var filter = ProjectFilter.all
-  private var refinement = Refinement()
+  private var view = ViewState()
+  var mode: ViewMode { view.mode }
   var density = GridLayout.Density(rawValue: UserDefaults.standard.integer(forKey: "gridDensity") + 1) ?? .medium {
     didSet { UserDefaults.standard.set(density.rawValue - 1, forKey: "gridDensity") }
   }
@@ -175,21 +174,29 @@ final class CanvasView: NSView {
   private func makeArrangement() -> any Arrangement {
     let height = { [store] (id: String) in store.items[id]?.height ?? 0 }
     switch mode {
-    case .wall: return Layout(columns: store.columns(for: filter), heightOf: height)
+    case .wall: return Layout(columns: store.columns(for: view.filter), heightOf: height)
     case .grid:
-      let sections = store.sections(for: filter) { [refinement, statusOf] item in refinement.matches(item, statusOf(item.id)) }
+      let sections = store.sections(for: view.filter) { [refinement = view.refinement, statusOf] item in refinement.matches(item, statusOf(item.id)) }
       return GridLayout(sections: sections, width: bounds.width, density: density, heightOf: height)
     case .list: return Layout(columns: [], heightOf: height)
     }
   }
 
-  /// Changes what's on the canvas. The tiles assemble again on a clock, the nearest ones first.
-  func show(_ nextMode: ViewMode, filter nextFilter: ProjectFilter) {
-    guard nextMode != mode || nextFilter != filter else { return }
-    if mode == .wall { wallCamera = camera }
-    let modeChanged = nextMode != mode
-    mode = nextMode
-    filter = nextFilter
+  /// Changes what's on the canvas. Another view or project assembles again on a clock, the nearest tiles first.
+  /// Another search or status narrows Grid: cards keep what they have, and the view goes back to the top.
+  func apply(_ next: ViewState) {
+    let before = view
+    guard next != before else { return }
+    view = next
+    guard next.mode == before.mode, next.filter == before.filter else { return rearrange(from: before.mode) }
+    guard mode == .grid else { return }
+    setCamera(Camera(x: 0, y: 0, z: 1))
+    boardChanged()
+  }
+
+  private func rearrange(from previous: ViewMode) {
+    if previous == .wall { wallCamera = camera }
+    let modeChanged = previous != mode
     clearKeyboardFocus()
     for (key, tile) in mounted { unmount(key, tile) }
     arrangement = makeArrangement()
@@ -202,15 +209,6 @@ final class CanvasView: NSView {
     isArriving = false
     busyTiles = true
     wake()
-  }
-
-  /// Narrows Grid by status or by name. Cards keep what they have, and the view goes back to the top.
-  func refine(_ next: Refinement) {
-    guard next != refinement else { return }
-    refinement = next
-    guard mode == .grid else { return }
-    setCamera(Camera(x: 0, y: 0, z: 1))
-    boardChanged()
   }
 
   /// A card's place in the loop moved, or a card joined or left what's being shown.
@@ -250,7 +248,7 @@ final class CanvasView: NSView {
     let isEmpty = mode == .grid && arrangement.headings.isEmpty
     emptyLabel.isHidden = !isEmpty
     if isEmpty {
-      emptyLabel.stringValue = refinement.isActive ? "Nothing here matches. Try another search or status." : "Nothing here yet."
+      emptyLabel.stringValue = view.refinement.isActive ? "Nothing here matches. Try another search or status." : "Nothing here yet."
       emptyLabel.sizeToFit()
       emptyLabel.frame.origin = CGPoint(x: (bounds.width - emptyLabel.frame.width) / 2, y: max(GridLayout.top + 40, (bounds.height - emptyLabel.frame.height) / 2))
     }
@@ -481,10 +479,12 @@ final class CanvasView: NSView {
     fly(to: next)
   }
 
-  func welcome(_ id: String) {
+  /// Adds a card where it can be seen forming. The insert's own board change mounts the card, so the canvas has
+  /// to know it's new before then.
+  func welcome(_ id: String, arriving insert: () -> Void) {
     newborn = id
     defer { newborn = nil }
-    boardChanged()
+    insert()
   }
 
   /// The repeat of a card nearest the middle of the window.

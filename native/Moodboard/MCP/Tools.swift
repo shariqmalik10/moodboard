@@ -151,8 +151,8 @@ final class Tools {
     if focus.openItemId == id { return ["open": id] }
     NSApp.activate()
     model.window.makeKeyAndOrderFront(nil)
-    if let item = model.store?.items[id], model.chrome?.state.filter.includes(item) == false { model.show(filter: .all) }
-    if let item = model.store?.items[id], model.chrome?.state.refinement.matches(item, model.statuses.status(id)) == false { model.refine(Refinement()) }
+    if let item = model.store?.items[id], model.chrome?.state.view.filter.includes(item) == false { model.show(filter: .all) }
+    if let item = model.store?.items[id], model.chrome?.state.view.refinement.matches(item, model.statuses.status(id)) == false { model.refine(Refinement()) }
     if list.isActive {
       list.select(id)
       return ["open": id]

@@ -332,7 +332,7 @@ final class ProjectSync {
   /// One more on the wall. While a whole project comes in, tiles gather at the ends of the columns. Later, one new
   /// component arrives where the person is looking.
   private func arrive(_ row: ProjectComponent, slug: String) {
-    guard let store = app.store else { return }
+    guard let store = app.store, let canvas = app.canvas else { return }
     if store.isHidden(row.id) { return }
     if runs[slug]?.adding != nil {
       store.add(row.id)
@@ -342,10 +342,9 @@ final class ProjectSync {
       }
       app.plates?.request(row.id)
     } else {
-      let slot = app.canvas?.slotNearCenter()
-      store.insert(id: row.id, column: slot?.column ?? 0, index: slot?.index ?? 0)
+      let slot = canvas.slotNearCenter()
+      canvas.welcome(row.id) { store.insert(id: row.id, column: slot.column, index: slot.index) }
       app.plates?.request(row.id, first: true)
-      app.canvas?.welcome(row.id)
       app.chrome?.say("\(row.title) joined from \(ProjectCatalog.name(of: slug) ?? slug).")
     }
   }

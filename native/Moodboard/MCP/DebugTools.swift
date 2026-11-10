@@ -128,7 +128,7 @@
         return ["w": model.window.contentView?.bounds.width ?? 0, "h": model.window.contentView?.bounds.height ?? 0] as JSON
       case "debug.chrome":
         let counts = model.chrome?.state.counts ?? [:]
-        return ["mode": model.chrome?.state.mode.rawValue ?? "", "projects": model.chrome?.state.projects ?? [], "compact": model.chrome?.state.isCompact ?? false, "density": model.canvas?.density.rawValue ?? -1, "query": model.chrome?.state.refinement.query ?? "", "attention": model.chrome?.state.refinement.attention?.rawValue ?? NSNull(), "counts": Dictionary(uniqueKeysWithValues: counts.map { ($0.key.rawValue, $0.value) })] as JSON
+        return ["mode": model.chrome?.state.view.mode.rawValue ?? "", "projects": model.chrome?.state.projects ?? [], "compact": model.chrome?.state.isCompact ?? false, "density": model.canvas?.density.rawValue ?? -1, "query": model.chrome?.state.view.refinement.query ?? "", "attention": model.chrome?.state.view.refinement.attention?.rawValue ?? NSNull(), "counts": Dictionary(uniqueKeysWithValues: counts.map { ($0.key.rawValue, $0.value) })] as JSON
       case "debug.refine":
         model.refine(Refinement(query: params["query"] as? String ?? "", attention: (params["attention"] as? String).flatMap(Attention.init(rawValue:))))
         return true

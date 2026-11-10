@@ -25,6 +25,13 @@ enum ViewMode: String, CaseIterable, Identifiable {
   }
 }
 
+/// What the window shows: the view, the project, and the search and status that narrow Grid and List.
+struct ViewState: Equatable {
+  var mode = ViewMode.wall
+  var filter = ProjectFilter.all
+  var refinement = Refinement()
+}
+
 /// Which things are showing: everything, or one project's.
 enum ProjectFilter: Hashable {
   case all

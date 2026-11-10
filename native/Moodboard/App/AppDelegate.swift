@@ -176,7 +176,7 @@ final class AppModel {
     list?.refresh()
     chrome?.boardChanged()
     // The last thing in the chosen project went away, so there's nothing left to choose.
-    if let chrome, case .project(let project) = chrome.state.filter, !chrome.state.projects.contains(project) {
+    if let chrome, case .project(let project) = chrome.state.view.filter, !chrome.state.projects.contains(project) {
       show(filter: .all)
     }
   }
@@ -190,22 +190,20 @@ final class AppModel {
 
   /// Narrows Grid and List. The Wall keeps showing everything.
   func refine(_ next: Refinement) {
-    guard let chrome else { return }
-    chrome.state.refinement = next
-    canvas?.refine(next)
-    list?.refine(next)
-    chrome.boardChanged()
+    guard var view = chrome?.state.view else { return }
+    view.refinement = next
+    apply(view)
   }
 
   /// Takes the keyboard to the search field. The Wall has no search, so this moves to Grid.
   func startSearch() {
-    if chrome?.state.mode == .wall { show(.grid) }
+    if chrome?.state.view.mode == .wall { show(.grid) }
     chrome?.state.searchFocus += 1
   }
 
   /// Return in the search field: use the first thing it found.
   func useFirstResult() {
-    if chrome?.state.mode == .list {
+    if chrome?.state.view.mode == .list {
       list?.focusRows()
     } else if let tile = canvas?.firstCard {
       focus?.open(tile)
@@ -213,28 +211,30 @@ final class AppModel {
   }
 
   /// Switches the view, the project, or both. An open tile flies home first.
-  func show(_ nextMode: ViewMode? = nil, filter nextFilter: ProjectFilter? = nil) {
-    guard let chrome, let canvas, let list, let focus else { return }
-    let mode = nextMode ?? chrome.state.mode
-    var filter = nextFilter ?? chrome.state.filter
-    if mode == .list, filter == .project("material") { filter = .all }
+  func show(_ mode: ViewMode? = nil, filter: ProjectFilter? = nil) {
+    guard let canvas, let focus, var view = chrome?.state.view else { return }
+    if let mode { view.mode = mode }
+    if let filter { view.filter = filter }
     if focus.tile != nil {
       Task {
         await focus.closeAndWait()
-        show(mode, filter: filter)
+        show(view.mode, filter: view.filter)
       }
       return
     }
-    let wasList = chrome.state.mode == .list
-    chrome.state.mode = mode
-    chrome.state.filter = filter
-    if wasList, mode != .list { list.leave() }
-    canvas.show(mode, filter: filter)
-    if mode == .list {
-      if wasList { list.setFilter(filter) } else { list.enter(filter, refinement: chrome.state.refinement) }
-    } else {
-      window.makeFirstResponder(canvas)
-    }
+    apply(view)
+    if view.mode != .list { window.makeFirstResponder(canvas) }
+  }
+
+  /// Hands the canvas, the list and the bar the same view state.
+  private func apply(_ next: ViewState) {
+    guard let chrome, let canvas, let list else { return }
+    var next = next
+    // List shows only components, so it has no Materials project.
+    if next.mode == .list, next.filter == .project("material") { next.filter = .all }
+    chrome.state.view = next
+    canvas.apply(next)
+    list.apply(next)
     chrome.boardChanged()
   }
 
@@ -288,13 +288,8 @@ final class AppModel {
     // Something new arrives on the wall, where it can be seen coming together.
     show(.wall, filter: .all)
     let slot = canvas.slotNearCenter(point)
-    store.onChange = nil
-    store.insert(id: id, material: material, column: slot.column, index: slot.index)
-    store.onChange = { [weak self] in self?.boardChanged() }
-    list?.refresh()
-    chrome?.boardChanged()
+    canvas.welcome(id) { store.insert(id: id, material: material, column: slot.column, index: slot.index) }
     plates?.request(id, first: true)
-    canvas.welcome(id)
     if let home = canvas.homeRect(for: id) { canvas.bringIntoView(home) }
   }
 

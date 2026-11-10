@@ -158,8 +158,7 @@ final class ListController {
   private lazy var controls = NSHostingView(rootView: StageControls(model: model.focus?.inspector.model ?? InspectorModel()))
   private(set) var stage: LiveStage?
   private var shownId: String?
-  private var filter = ProjectFilter.all
-  private var refinement = Refinement()
+  private var view = ViewState()
   private(set) var isActive = false
   private let calm = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
 
@@ -192,10 +191,21 @@ final class ListController {
 
   var selectedId: String? { isActive ? shownId : nil }
 
-  func enter(_ filter: ProjectFilter, refinement: Refinement) {
+  /// Opens, closes or narrows the list to match the window. A new project or search starts again from the top row.
+  func apply(_ next: ViewState) {
+    guard next.mode == .list else { return leave() }
+    let wasActive = isActive
+    let before = view
+    view = next
+    if !wasActive {
+      enter()
+    } else if next != before {
+      refresh(keepingSelected: false)
+    }
+  }
+
+  private func enter() {
     isActive = true
-    self.filter = filter
-    self.refinement = refinement
     if let sidebar, sidebar.superview == nil {
       sidebar.safeAreaRegions = []
       container.addSubview(sidebar, positioned: .above, relativeTo: material)
@@ -206,7 +216,7 @@ final class ListController {
     state.focusRequest += 1
   }
 
-  func leave() {
+  private func leave() {
     guard isActive else { return }
     isActive = false
     showStage(for: nil)
@@ -219,7 +229,7 @@ final class ListController {
     guard isActive, let store = model.store else { return }
     let statuses = model.statuses
     let held = keepingSelected ? state.selection : nil
-    let sections = store.sections(for: filter, componentsOnly: true) { [refinement] item in
+    let sections = store.sections(for: view.filter, componentsOnly: true) { [refinement = view.refinement] item in
       item.id == held || refinement.matches(item, statuses.status(item.id))
     }
     state.sections = sections.map { section in
@@ -231,16 +241,6 @@ final class ListController {
     let next = ids.contains { $0 == state.selection } ? state.selection : ids.first
     state.selection = next
     if next != shownId { showStage(for: next) }
-  }
-
-  func setFilter(_ filter: ProjectFilter) {
-    self.filter = filter
-    refresh(keepingSelected: false)
-  }
-
-  func refine(_ next: Refinement) {
-    refinement = next
-    refresh(keepingSelected: false)
   }
 
   func select(_ id: String?) {

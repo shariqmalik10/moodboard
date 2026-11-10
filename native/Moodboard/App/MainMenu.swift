@@ -109,7 +109,7 @@ extension AppDelegate {
 
 extension AppDelegate: NSMenuItemValidation {
   func validateMenuItem(_ item: NSMenuItem) -> Bool {
-    let current = model?.chrome?.state.mode ?? .wall
+    let current = model?.chrome?.state.view.mode ?? .wall
     switch item.action {
     case #selector(showWall(_:)): item.state = current == .wall ? .on : .off
     case #selector(showGrid(_:)): item.state = current == .grid ? .on : .off
