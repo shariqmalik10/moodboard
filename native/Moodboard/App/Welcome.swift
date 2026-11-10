@@ -142,7 +142,7 @@ final class WelcomeController {
 
   private func connectOwn() {
     close()
-    app.projects.choose()
+    app.connector.choose()
   }
 
   private func addToClaude() {

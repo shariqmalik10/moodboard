@@ -107,6 +107,8 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
 
   func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
     guard let body = message.body as? JSON, let parsed = PageMessage(body) else { return }
+    // A backstage web view answers to whoever loaded it. The rest go to the app.
+    if let own = (message.webView as? StageWebView)?.onMessage { return own(parsed) }
     onMessage?(message.webView, parsed)
   }
 }
@@ -114,6 +116,8 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
 /// A web view on the wall ignores the pointer. The canvas handles it until the tile is opened.
 final class StageWebView: WKWebView {
   var isInteractive = false
+  /// Set for a web view that isn't on the wall, so its page's messages reach only its owner.
+  var onMessage: ((PageMessage) -> Void)?
 
   override func hitTest(_ point: NSPoint) -> NSView? { isInteractive ? super.hitTest(point) : nil }
   override func mouseMoved(with event: NSEvent) { if isInteractive { super.mouseMoved(with: event) } }

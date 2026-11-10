@@ -81,7 +81,7 @@ enum MainMenu {
 extension AppDelegate {
   @objc func addMaterial(_ sender: Any?) { model?.chrome?.chooseMaterial() }
   @objc func importFromPaper(_ sender: Any?) { model?.chrome?.state.onPaper() }
-  @objc func connectProject(_ sender: Any?) { model?.projects.choose() }
+  @objc func connectProject(_ sender: Any?) { model?.connector.choose() }
   @objc func showWelcome(_ sender: Any?) { model?.welcome.show() }
   @objc func openRepository(_ sender: Any?) { NSWorkspace.shared.open(URL(string: "https://github.com/shariqmalik10/moodboard")!) }
   @objc func zoomInWall(_ sender: Any?) { zoom(by: 1) }

@@ -185,7 +185,7 @@ final class Tools {
     let connection: ProjectSync.Connection
     do {
       connection = try await model.projects.connect(URL(filePath: NSString(string: path).expandingTildeInPath, directoryHint: .isDirectory))
-    } catch let several as ProjectSync.SeveralApps {
+    } catch let several as SeveralApps {
       throw ToolError("\(several.localizedDescription) Ask the person which one, then pass its folder as path: \(several.apps.map(\.path).joined(separator: ", ")).")
     }
     let slug = connection.project.slug

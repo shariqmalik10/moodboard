@@ -41,25 +41,32 @@ extension Piece {
 
 /// Bakes plates off to the side, a few at a time, and keeps them on disk for the next launch.
 final class PlateStore {
-  private let host: WebHost
-  private let backstage: NSView
   private let build: String
   private var plates: [String: Plate] = [:]
   private var keys: [String: String] = [:]
-  private var queue: [String] = []
   private var failed: [String: String] = [:]
-  private var bakers: [Baker] = []
+  private let bakers: BackstageWorkers<String>
   private var items: (String) -> Item?
 
   var onPlate: ((String, Plate) -> Void)?
 
-  private static let concurrency = 3
-
   init(host: WebHost, backstage: NSView, items: @escaping (String) -> Item?) {
-    self.host = host
-    self.backstage = backstage
     self.items = items
+    bakers = BackstageWorkers(host: host, backstage: backstage)
     build = SchemeHandler.buildKey()
+    bakers.start = { [unowned self] id, web in
+      guard let item = self.items(id), case .component(let viewport, _) = item.body else { return .drop }
+      web.frame = CGRect(x: 0, y: 0, width: viewport.w, height: viewport.h)
+      web.load(URLRequest(url: LiveStage.url(for: id, mode: .still)))
+      return .loaded
+    }
+    bakers.receive = { [unowned self] baker, id, message in
+      switch message {
+      case .ready: Task { await self.complete(baker, id) }
+      case .failed(_, let reason): self.fail(baker, id, reason)
+      default: break
+      }
+    }
     clearOldBuilds()
   }
 
@@ -85,7 +92,7 @@ final class PlateStore {
 
   func plate(for id: String) -> Plate? { plates[id] }
   func failure(for id: String) -> String? { failed[id] }
-  var pending: Int { queue.count + bakers.filter(\.isBusy).count }
+  var pending: Int { bakers.pending }
   var bakedCount: Int { plates.count }
 
   /// Asks for a plate. `first` puts it ahead of everything waiting, for a tile the person can see.
@@ -97,14 +104,17 @@ final class PlateStore {
     }
     let wanted = key(for: id)
     if keys[id] == wanted, plates[id] != nil { return }
-    if let at = queue.firstIndex(of: id) {
-      if first { queue.remove(at: at); queue.insert(id, at: 0) }
+    if bakers.queue.contains(id) {
+      if first {
+        bakers.removeQueued { $0 == id }
+        bakers.enqueue(id, first: true)
+      }
       return
     }
-    guard !bakers.contains(where: { $0.id == id }) else { return }
+    guard !bakers.running.contains(id) else { return }
     if loadFromDisk(id, key: wanted) { return }
-    if first { queue.insert(id, at: 0) } else { queue.append(id) }
-    pump()
+    bakers.enqueue(id, first: first)
+    bakers.pump()
   }
 
   /// Bakes a plate and waits for it, or gives up after a few seconds and lets the wall carry on.
@@ -151,58 +161,26 @@ final class PlateStore {
     onPlate?(id, plate)
   }
 
-  private func pump() {
-    while bakers.filter(\.isBusy).count < Self.concurrency, !queue.isEmpty {
-      let id = queue.removeFirst()
-      guard let item = items(id) else { continue }
-      let baker = bakers.first { !$0.isBusy } ?? makeBaker()
-      baker.start(item)
-    }
-    // Baking is occasional, and each web view holds a whole process, so they don't stay around.
-    if queue.isEmpty, !bakers.contains(where: \.isBusy) {
-      bakers.forEach { $0.web.removeFromSuperview() }
-      bakers.removeAll()
-    }
+  private func fail(_ baker: BackstageWorkers<String>.Worker, _ id: String, _ reason: String) {
+    failed[id] = reason
+    bakers.release(baker)
+    bakers.pump()
   }
 
-  private func makeBaker() -> Baker {
-    let baker = Baker(web: host.makeWebView())
-    backstage.addSubview(baker.web)
-    bakers.append(baker)
-    return baker
-  }
-
-  func handle(_ web: WKWebView?, message: PageMessage) {
-    guard let baker = bakers.first(where: { $0.web === web }) else { return }
-    switch message {
-    case .ready: Task { await complete(baker) }
-    case .failed(_, let reason): fail(baker, reason)
-    default: break
-    }
-  }
-
-  func owns(_ web: WKWebView?) -> Bool { bakers.contains { $0.web === web } }
-
-  private func fail(_ baker: Baker, _ reason: String) {
-    if let id = baker.id { failed[id] = reason }
-    baker.reset()
-    pump()
-  }
-
-  private func complete(_ baker: Baker) async {
-    guard let id = baker.id, let item = items(id) else { return }
+  private func complete(_ baker: BackstageWorkers<String>.Worker, _ id: String) async {
+    guard let item = items(id) else { return fail(baker, id, "It left the wall.") }
     let wanted = key(for: id)
     do {
-      let plate = try await baker.capture(item)
+      let plate = try await capture(item, from: baker.web)
       finish(id, key: wanted, plate: plate)
       store(plate, as: wanted)
     } catch {
       failed[id] = error.localizedDescription
     }
-    baker.reset()
+    bakers.release(baker)
     // Tuned or re-imported while the picture was being taken, so that picture is already out of date.
     if key(for: id) != wanted { request(id, first: true) }
-    pump()
+    bakers.pump()
   }
 
   private func store(_ plate: Plate, as key: String) {
@@ -214,54 +192,31 @@ final class PlateStore {
   }
 }
 
-/// One web view that loads a component at its real size, held still, and takes its picture.
-private final class Baker {
-  let web: StageWebView
-  private(set) var id: String?
+/// Takes a baked component's picture, and the parts it's made of, at the size its tile shows them.
+private func capture(_ item: Item, from web: StageWebView) async throws -> Plate {
+  guard case .component(_, let crop) = item.body else { throw CocoaError(.featureUnsupported) }
+  let scale = Grain.cardWidth / crop.w
+  try await Task.sleep(for: .milliseconds(160))
 
-  var isBusy: Bool { id != nil }
-
-  init(web: StageWebView) {
-    self.web = web
+  let data = try await web.callJSON(
+    "return window.__structure(crop)",
+    ["crop": ["x": crop.x, "y": crop.y, "w": crop.w, "h": crop.h]]
+  )
+  let pieces = try JSONDecoder().decode([Piece].self, from: data).map { piece -> Piece in
+    var out = piece
+    out.x *= scale
+    out.y *= scale
+    out.w *= scale
+    out.h *= scale
+    out.radius *= scale
+    out.strokeWidth = piece.strokeWidth.map { max($0 * scale, 0.5) }
+    return out
   }
 
-  func start(_ item: Item) {
-    guard case .component(let viewport, _) = item.body else { return }
-    id = item.id
-    web.frame = CGRect(x: 0, y: 0, width: viewport.w, height: viewport.h)
-    web.load(URLRequest(url: LiveStage.url(for: item.id, mode: .still)))
-  }
-
-  func reset() {
-    id = nil
-    web.loadHTMLString("", baseURL: nil)
-  }
-
-  func capture(_ item: Item) async throws -> Plate {
-    guard case .component(_, let crop) = item.body else { throw CocoaError(.featureUnsupported) }
-    let scale = Grain.cardWidth / crop.w
-    try await Task.sleep(for: .milliseconds(160))
-
-    let data = try await web.callJSON(
-      "return window.__structure(crop)",
-      ["crop": ["x": crop.x, "y": crop.y, "w": crop.w, "h": crop.h]]
-    )
-    let pieces = try JSONDecoder().decode([Piece].self, from: data).map { piece -> Piece in
-      var out = piece
-      out.x *= scale
-      out.y *= scale
-      out.w *= scale
-      out.h *= scale
-      out.radius *= scale
-      out.strokeWidth = piece.strokeWidth.map { max($0 * scale, 0.5) }
-      return out
-    }
-
-    let configuration = WKSnapshotConfiguration()
-    configuration.rect = CGRect(x: crop.x, y: crop.y, width: crop.w, height: crop.h)
-    configuration.snapshotWidth = NSNumber(value: Grain.cardWidth)
-    let image = try await web.takeSnapshot(configuration: configuration)
-    guard let picture = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { throw CocoaError(.fileReadCorruptFile) }
-    return Plate(image: picture, pieces: pieces)
-  }
+  let configuration = WKSnapshotConfiguration()
+  configuration.rect = CGRect(x: crop.x, y: crop.y, width: crop.w, height: crop.h)
+  configuration.snapshotWidth = NSNumber(value: Grain.cardWidth)
+  let image = try await web.takeSnapshot(configuration: configuration)
+  guard let picture = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { throw CocoaError(.fileReadCorruptFile) }
+  return Plate(image: picture, pieces: pieces)
 }

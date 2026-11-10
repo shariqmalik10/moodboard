@@ -182,7 +182,7 @@ struct ChromeView: View {
           state: model.projects.state,
           onConnect: {
             state.showsProjects = false
-            model.projects.choose()
+            model.connector.choose()
           },
           onDisconnect: { model.projects.disconnect(slug: $0) },
           onReveal: { NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: $0)]) }

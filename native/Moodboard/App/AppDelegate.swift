@@ -111,6 +111,7 @@ final class AppModel {
   private(set) lazy var tools = Tools(model: self)
   private(set) lazy var handoffs = Handoffs(app: self)
   private(set) lazy var projects = ProjectSync(app: self)
+  private(set) lazy var connector = ProjectConnector(app: self)
   private(set) lazy var dials = Dials(app: self)
   private(set) lazy var welcome = WelcomeController(app: self)
 
@@ -249,14 +250,6 @@ final class AppModel {
       runtime.markReady()
       return
     }
-    if projects.owns(web) {
-      projects.handle(web, message: message)
-      return
-    }
-    if plates?.owns(web) == true {
-      plates?.handle(web, message: message)
-      return
-    }
     switch message {
     case .dials(let id, let state, let byPerson):
       focus?.tuned(id: id, state: state, byPerson: byPerson)
@@ -277,7 +270,7 @@ final class AppModel {
   /// A dropped folder is a project to connect. Anything else is a picture or a film for the wall.
   func addMaterials(_ urls: [URL], at point: CGPoint?) {
     let folders = urls.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
-    folders.forEach(projects.connectAsked)
+    folders.forEach(connector.connectAsked)
     Task {
       for url in urls where !folders.contains(url) {
         do {

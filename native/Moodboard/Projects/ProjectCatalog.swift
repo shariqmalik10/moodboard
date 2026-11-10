@@ -85,8 +85,10 @@ enum ProjectCatalog {
   static func project(of id: String) -> ConnectedProject? { rows[id].flatMap { project(slug: $0.project) } }
   static func name(of slug: String) -> String? { project(slug: slug)?.name }
 
-  /// A slug no other connected folder has, since ids are built from it.
-  static func freeSlug(_ wanted: String, root: String) -> String {
+  /// A slug made from the project's name that no other connected folder has, since ids are built from it.
+  static func slug(named name: String, root: String) -> String {
+    let words = name.lowercased().replacing(/[^a-z0-9]+/, with: "-").trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+    let wanted = words.isEmpty ? "project" : words
     let taken = Set(projects.filter { $0.root != root }.map(\.slug))
     guard taken.contains(wanted) else { return wanted }
     return (2...).lazy.map { "\(wanted)-\($0)" }.first { !taken.contains($0) } ?? wanted
