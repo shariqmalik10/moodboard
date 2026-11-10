@@ -81,7 +81,7 @@ function walk(element: Element, crop: Crop, opacity: number, out: Piece[]) {
   for (const child of element.children) walk(child, crop, seen, out);
 }
 
-/** The biggest pieces carry the shape, so a crowded component keeps those and drops the smallest. */
+/** The biggest pieces define the shape, so a crowded component keeps those and drops the smallest. */
 export function readStructure(crop: Crop, limit = 56): Piece[] {
   const root = document.getElementById("stage");
   if (!root) return [];

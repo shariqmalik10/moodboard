@@ -414,7 +414,7 @@ final class CanvasView: NSView {
     spare.append(tile)
   }
 
-  /// Hands the few running stages to the tiles that have earned them, and returns whether any tile
+  /// Hands the few running stages to the tiles that rank highest, and returns whether any tile
   /// still has a timed change in progress.
   private func updateLive(_ dt: Double) -> Bool {
     var moving = false

@@ -1,6 +1,6 @@
 import Foundation
 
-/// The wall's grain: every column is this wide, and the wall repeats every N of them, forever.
+/// Every column is this wide, and the wall repeats every N columns, forever.
 enum Grain {
   static let cardWidth = 320.0
   static let gap = 28.0

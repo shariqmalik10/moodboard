@@ -50,7 +50,7 @@ struct Catalog: Codable {
   var demos: [CatalogRow]
 }
 
-/// What stands on the wall.
+/// Something on the wall.
 struct Item {
   enum Body {
     case component(viewport: Size, crop: Crop)

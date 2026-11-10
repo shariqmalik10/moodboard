@@ -94,7 +94,7 @@ final class Tools {
 
   private func listComponents() async throws -> [JSON] {
     guard let store = model.store else { return [] }
-    // The watch sleeps while this app is behind others, which is often when Claude Code asks.
+    // PaperWatch pauses while this app is behind others, which is often when Claude Code asks.
     await model.paperWatch?.check()
     let onWall = Set(store.visibleIds)
     return store.items.values.filter(\.isComponent).sorted(by: { $0.id < $1.id }).map { item in

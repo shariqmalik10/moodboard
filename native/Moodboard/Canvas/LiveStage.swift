@@ -15,7 +15,7 @@ final class LiveStage {
   private(set) var itemId: String?
   private(set) var phase: Phase = .idle
   private(set) var isRunning = false
-  /// A person has this stage, so its script stays stopped until it goes back to the wall.
+  /// A person is using this stage, so its script stays stopped until it goes back to the wall.
   private(set) var isHandsOn = false
   var lastUsed = 0
   /// Whoever is showing this stage. A stage without one is free to be reused.

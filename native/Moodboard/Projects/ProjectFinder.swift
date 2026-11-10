@@ -79,7 +79,7 @@ nonisolated enum ProjectFinder {
       var next: [URL] = []
       for each in level {
         visited += 1
-        // A home folder or a whole drive would take minutes, and holds no single answer anyway.
+        // A home folder or a whole drive would take minutes, and wouldn't point to a single app anyway.
         if visited > searchLimit { return found }
         let names = ((try? FileManager.default.contentsOfDirectory(atPath: each.path)) ?? []).sorted()
         for name in names where !name.hasPrefix(".") && !skipped.contains(name) {

@@ -1,6 +1,6 @@
 import AppKit
 
-/// A component from a connected project, with what the wall needs to stand it up before the project's server is running.
+/// A component from a connected project, with what the wall needs to show it before the project's server is running.
 struct ProjectComponent: Codable, Equatable {
   var id: String
   var title: String
@@ -53,7 +53,7 @@ enum ProjectSizing {
   }
 }
 
-/// Which projects are connected, kept on disk so their tiles stand from their baked plates while the servers start.
+/// Which projects are connected, kept on disk so their tiles show their baked plates while the servers start.
 enum ProjectCatalog {
   /// The panel's folder for props the wall made up. They stay in the app, and every other dial edits the source.
   static let samplePrefix = "Sample props."

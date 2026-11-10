@@ -1,7 +1,7 @@
 import Foundation
 
-/// A spring in the two numbers a designer thinks in. Integrated in closed form, so a long frame can't
-/// blow it up, and it keeps its velocity when the target changes, so anything can be interrupted.
+/// A spring set by response and damping, the two numbers a designer tunes. Integrated in closed form, so a
+/// long frame can't make it diverge, and it keeps its velocity when the target changes, so anything can be interrupted.
 struct Spring {
   var value: Double
   var velocity = 0.0
@@ -51,7 +51,7 @@ func easeOut(_ value: Double) -> Double {
   return 1 - (1 - t) * (1 - t) * (1 - t)
 }
 
-/// Where a tile stands against the window, as a pure function of position. Time has no part in it,
+/// How far a tile is into the window, as a pure function of position. It doesn't depend on time,
 /// so stopping stops the forming, and reversing unforms it along the same path.
 struct Coverage: Equatable {
   /// 0 outside the window, 1 once the tile is fully in view.

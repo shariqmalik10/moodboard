@@ -1,7 +1,7 @@
 /**
  * The scripted cursor can't trigger `:hover`, since only a real pointer sets it. So every rule that
- * names a pseudo-state also learns a class, and the director sets the class on what it points at.
- * The component's own stylesheet then answers exactly as it does for a real pointer.
+ * names a pseudo-state also matches a class, and the director sets the class on what it points at.
+ * The component's own stylesheet then responds as it does to a real pointer.
  */
 export const PSEUDO = { hover: "__hover", active: "__active", focusVisible: "__focus" } as const;
 
@@ -24,7 +24,7 @@ function teach(rules: CSSRuleList) {
 
 const seen = new WeakSet<CSSStyleSheet>();
 
-/** A dial's stylesheet is rewritten as it moves, so it has to learn the classes again each time. */
+/** A dial's stylesheet is rewritten as it moves, so its rules get the classes added again each time. */
 export function teachSheet(sheet: CSSStyleSheet | null) {
   if (sheet) teach(sheet.cssRules);
 }
@@ -41,7 +41,7 @@ function teachAll() {
   }
 }
 
-/** Teaches what is loaded now and whatever a lazily imported component brings later. */
+/** Adds the classes to every stylesheet loaded now and to any a lazily imported component loads later. */
 export function watchPseudoStates() {
   teachAll();
   new MutationObserver(teachAll).observe(document.head, { childList: true, subtree: true, characterData: true });

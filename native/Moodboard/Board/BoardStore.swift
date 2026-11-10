@@ -1,6 +1,6 @@
 import AppKit
 
-/// The wall's truth. Everything that changes it, from the window or from Claude Code, comes through here.
+/// Owns the wall's state. Every change to it, from the window or from Claude Code, goes through here.
 final class BoardStore {
   private(set) var board: Board
   private(set) var items: [String: Item] = [:]

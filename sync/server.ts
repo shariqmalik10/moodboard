@@ -197,7 +197,7 @@ function write(id: string, values: Record<string, unknown>) {
   return { changes, conflicts };
 }
 
-/** Keeps where each dial began. A dial that came back to it has nothing left to say. */
+/** Keeps where each dial began. A dial moved back to its start drops out of the journal. */
 function mergeJournal(journalled: Change[], changes: Change[]) {
   const out = new Map(journalled.map((each) => [each.path, each]));
   for (const change of changes) {

@@ -40,7 +40,7 @@ function fire(node: Element, type: string, x: number, y: number, extra: MouseEve
 
 const timeout = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** Brings running transitions to their end. A covered window's clocks stand still, so waiting wouldn't do it. */
+/** Brings running transitions to their end. A covered window's animation clocks don't advance, so waiting wouldn't finish them. */
 async function settle() {
   for (let pass = 0; pass < 3; pass++) {
     await timeout(50);
@@ -95,7 +95,7 @@ export class Director {
     void this.loop(generation, from, once);
   }
 
-  /** Plays the first beats at once and out of sight, so the component stands at its best moment. */
+  /** Plays the first beats at once and out of sight, so the component starts in the state they reach. */
   async pose(beats: number) {
     const generation = ++this.generation;
     this.instant = true;
@@ -105,7 +105,7 @@ export class Director {
     await settle();
   }
 
-  /** Leaves the component exactly as it stands, with nothing of the script still holding it down. */
+  /** Stops the script and releases its press and hover, leaving the component in its current state. */
   stop() {
     this.generation++;
     this.releasePress();

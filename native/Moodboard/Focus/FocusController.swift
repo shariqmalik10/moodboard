@@ -3,7 +3,7 @@ import SwiftUI
 import WebKit
 
 /// Opens a tile: it leaves the wall and flies to the middle of the window, with the wall dimmed behind
-/// it and the dials beside it. Springs carry the whole flight, so it can reverse at any moment.
+/// it and the dials beside it. Springs drive the whole move, so it can reverse at any moment.
 final class FocusController {
   private unowned let model: AppModel
   private let host = PassthroughView()

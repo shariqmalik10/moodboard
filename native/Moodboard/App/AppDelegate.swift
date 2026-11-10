@@ -89,7 +89,7 @@ final class RootView: NSView {
   required init?(coder: NSCoder) { fatalError("init(coder:) is unused") }
 }
 
-/// Everything the app is, once the web runtime has said which components exist.
+/// The app's parts, created once the web runtime has reported which components exist.
 final class AppModel {
   let host: WebHost
   let root: RootView

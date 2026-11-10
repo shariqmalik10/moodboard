@@ -350,7 +350,7 @@ final class TileView: NSView {
     return !(handoff.isSettled && press.isSettled && lift.isSettled && shift.isSettled && birth.isSettled)
   }
 
-  /// Comes into being on a clock rather than by scrolling, for something just added to the wall.
+  /// Forms on a timer rather than as you scroll, for something just added to the wall.
   func beginBirth(response: Double = 1.1) {
     guard !calm else { return }
     birth = Spring(0, response: response)

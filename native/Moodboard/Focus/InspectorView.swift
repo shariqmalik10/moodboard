@@ -45,7 +45,7 @@ final class InspectorModel {
   var onDismissLost: () -> Void = {}
 }
 
-/// The panel beside an open tile: DialKit in the middle, and the way to Claude Code below it.
+/// The panel beside an open tile: DialKit in the middle, and the note and Send to Claude Code below it.
 final class InspectorView: NSView {
   let model = InspectorModel()
   private let webHost: WebHost
@@ -167,7 +167,7 @@ struct StageControls: View {
   }
 }
 
-/// What the person has moved, each with the way back to where it began.
+/// What the person has moved, each with a button that puts it back.
 private struct ChangesSection: View {
   let model: InspectorModel
   @State private var isOpen = true

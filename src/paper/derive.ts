@@ -196,7 +196,7 @@ export function derive(tree: PaperNode, tokens: PaperToken[]): Derived {
   };
   const rewritten = rewrite(tree);
 
-  // Static designs get real motion to tune: how they arrive, and how their controls answer a press.
+  // Static designs get real motion to tune: how they arrive, and how their controls respond to a press.
   const motion: Record<string, unknown> = {
     enter: { type: "spring", stiffness: 260, damping: 30, mass: 1 },
     stagger: [55, 0, 200, 5],

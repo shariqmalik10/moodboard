@@ -8,7 +8,7 @@ function link(family: string, options: Options) {
   loaded.add(name);
   const query = name.replace(/ /g, "+");
   const element = Object.assign(document.createElement("link"), { rel: "stylesheet", href: `https://fonts.googleapis.com/css2?family=${query}:wght@100..900&display=swap` });
-  // A font without a variable weight range refuses the request above, and takes the plain one.
+  // A font without a variable weight range fails the request above, so it falls back to the plain one.
   element.onerror = () => {
     element.onerror = null;
     const weights = [options.weight].flat().filter(Boolean).join(";");

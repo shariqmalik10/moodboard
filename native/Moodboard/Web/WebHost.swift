@@ -111,7 +111,7 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
   }
 }
 
-/// A web view on the wall only shows. The canvas keeps the pointer until the tile is opened.
+/// A web view on the wall ignores the pointer. The canvas handles it until the tile is opened.
 final class StageWebView: WKWebView {
   var isInteractive = false
 
@@ -123,7 +123,7 @@ final class StageWebView: WKWebView {
   override var acceptsFirstResponder: Bool { isInteractive }
 }
 
-/// Makes the app's web views, all sharing one way in and one way back.
+/// Makes the app's web views, all sharing one URL scheme handler and one message bridge.
 final class WebHost {
   let bridge = WebBridge()
   let scheme = SchemeHandler()

@@ -158,7 +158,7 @@ enum MCPBridge {
   }
 
   /// Claude Code starts this server in the folder it's working in, so that folder is what "this project" means.
-  /// The wall runs elsewhere, so a relative path is made whole here.
+  /// The wall runs in another process, so this resolves a relative path against that folder.
   nonisolated static func projectPath(_ given: String?, workingIn folder: String = FileManager.default.currentDirectoryPath) throws -> String {
     let given = given.map { NSString(string: $0).expandingTildeInPath } ?? ""
     if given.hasPrefix("/") { return given }

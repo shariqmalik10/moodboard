@@ -165,7 +165,7 @@ async function boot() {
     }
   });
 
-  // A person's own pointer on the card ends the scripted loop, and the component is simply theirs.
+  // A person's own pointer on the card ends the scripted loop and leaves the component to them.
   const takeOver = (event: Event) => {
     if (!event.isTrusted) return;
     director.stop();
