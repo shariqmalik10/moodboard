@@ -362,7 +362,7 @@ struct InspectorFooter: View {
           .fixedSize(horizontal: false, vertical: true)
           .accessibilityLabel("Repository")
           Spacer()
-          if model.run?.isActive == true {
+          if model.run?.isWorking == true {
             Button { model.onAction(.handoff(.stop)) } label: {
               Image(systemName: "stop.fill").font(.system(size: 10, weight: .bold)).frame(width: 24, height: 24)
             }
@@ -379,7 +379,7 @@ struct InspectorFooter: View {
             .buttonBorderShape(.circle)
             .controlSize(.small)
             .keyboardShortcut(.return, modifiers: .command)
-            .disabled(model.repository == nil)
+            .disabled(model.repository == nil || model.run?.isOver == false)
             .help(model.repository == nil ? "Choose a repository first" : "Send to Claude Code, which can edit files in \(model.repository?.lastPathComponent ?? "this folder") (⌘Return)")
             .accessibilityLabel("Send to Claude Code")
           }
@@ -397,12 +397,12 @@ struct HandoffStatus: View {
 
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 6) {
-      if run.isActive { ProgressView().controlSize(.mini) }
+      if run.isWorking { ProgressView().controlSize(.mini) }
       Text(run.status).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(3)
       Spacer(minLength: 0)
       if run.needsSignIn {
         Button("Sign in", action: onSignIn).buttonStyle(.link).font(.system(size: 12))
-      } else if run.sessionId != nil, !run.isActive {
+      } else if run.sessionId != nil, !run.isWorking {
         Button("Continue in Terminal", action: onResume).buttonStyle(.link).font(.system(size: 12))
       }
     }
@@ -412,20 +412,68 @@ struct HandoffStatus: View {
 /// One request sent to Claude Code, as the inspector shows it.
 @Observable
 final class HandoffRun {
+  enum Phase {
+    case starting
+    case running(Process)
+    /// Claude Code said how it ended, and its process hasn't exited yet.
+    case reported(Outcome, Process)
+    case ended(Outcome)
+  }
+
+  enum Outcome {
+    /// The first line of what Claude Code said when it finished.
+    case built(summary: String)
+    case failed(needsSignIn: Bool)
+  }
+
   let repository: URL
+  private(set) var phase = Phase.starting
   private(set) var status = "Starting Claude Code…"
-  private(set) var isActive = true
   private(set) var sessionId: String?
   private(set) var changedFiles: Set<String> = []
-  private(set) var needsSignIn = false
-  private(set) var hasEnded = false
-  /// Claude Code said it finished, and this is the first line of what it said.
-  private(set) var didSucceed = false
-  private(set) var summary: String?
   private var lastError: String?
 
   init(repository: URL) {
     self.repository = repository
+  }
+
+  /// Claude Code is still at work, so the inspector offers Stop.
+  var isWorking: Bool {
+    switch phase {
+    case .starting, .running: true
+    case .reported, .ended: false
+    }
+  }
+
+  /// Its last line has arrived, or will never come.
+  var hasReported: Bool { !isWorking }
+
+  /// Nothing of this run is left, so another can start.
+  var isOver: Bool {
+    if case .ended = phase { true } else { false }
+  }
+
+  var needsSignIn: Bool {
+    switch phase {
+    case .reported(.failed(true), _), .ended(.failed(true)): true
+    default: false
+    }
+  }
+
+  var builtSummary: String? {
+    if case .ended(.built(let summary)) = phase { summary } else { nil }
+  }
+
+  func started(_ process: Process) {
+    guard case .starting = phase else { return }
+    phase = .running(process)
+  }
+
+  func stop() {
+    switch phase {
+    case .running(let process), .reported(_, let process): process.terminate()
+    case .starting, .ended: break
+    }
   }
 
   func apply(_ event: HandoffEvent) {
@@ -447,19 +495,23 @@ final class HandoffRun {
   }
 
   private func finish(_ text: String) {
-    didSucceed = true
-    summary = text
     let count = changedFiles.count
     status = count == 0 ? text : "\(count == 1 ? "1 file" : "\(count) files") changed. \(text)"
-    hasEnded = true
-    isActive = false
+    report(.built(summary: text))
   }
 
   func fail(_ reason: String) {
-    needsSignIn = reason.range(of: "authenticate|log ?in|sign ?in", options: [.regularExpression, .caseInsensitive]) != nil
+    let needsSignIn = reason.range(of: "authenticate|log ?in|sign ?in", options: [.regularExpression, .caseInsensitive]) != nil
     status = needsSignIn ? "Claude Code on this Mac needs you to sign in. After that, send again." : reason
-    hasEnded = true
-    isActive = false
+    report(.failed(needsSignIn: needsSignIn))
+  }
+
+  private func report(_ outcome: Outcome) {
+    switch phase {
+    case .starting: phase = .ended(outcome)
+    case .running(let process): phase = .reported(outcome, process)
+    case .reported, .ended: break
+    }
   }
 
   func noteError(_ line: String) {
@@ -468,14 +520,20 @@ final class HandoffRun {
 
   /// The process has gone. If it never said how it ended, this is the only news there is.
   func ended(status code: Int32, stoppedByPerson: Bool) {
-    isActive = false
-    guard !hasEnded else { return }
-    if stoppedByPerson {
-      fail("Stopped.")
-    } else if code == 127 {
-      fail("Couldn't find Claude Code. Is `claude` installed for this user?")
-    } else {
-      fail("Claude Code stopped. \(lastError ?? "It exited with code \(code).")")
+    switch phase {
+    case .reported(let outcome, _):
+      phase = .ended(outcome)
+    case .running:
+      if stoppedByPerson {
+        fail("Stopped.")
+      } else if code == 127 {
+        fail("Couldn't find Claude Code. Is `claude` installed for this user?")
+      } else {
+        fail("Claude Code stopped. \(lastError ?? "It exited with code \(code).")")
+      }
+      if case .reported(let outcome, _) = phase { phase = .ended(outcome) }
+    case .starting, .ended:
+      break
     }
   }
 }

@@ -82,7 +82,6 @@ final class LineReader {
 final class Handoffs {
   private unowned let app: AppModel
   private var runs: [String: HandoffRun] = [:]
-  private var processes: [String: Process] = [:]
 
   private static let recentsKey = "recentRepositories"
   private var showedProjectRoot = false
@@ -151,7 +150,8 @@ final class Handoffs {
   }
 
   func send(id: String, repository: URL) {
-    guard runs[id]?.isActive != true else { return }
+    // A finished run's process can linger a moment after its last line, and Stop has to keep reaching it.
+    guard runs[id]?.isOver != false else { return }
     let run = HandoffRun(repository: repository)
     runs[id] = run
     remember(repository)
@@ -190,13 +190,12 @@ final class Handoffs {
       let stopped = finished.terminationReason == .uncaughtSignal
       Task { @MainActor in
         // Its last line may still be in the pipe, and that line says how it ended.
-        for _ in 0..<10 where !run.hasEnded { try? await Task.sleep(for: .milliseconds(30)) }
+        for _ in 0..<10 where !run.hasReported { try? await Task.sleep(for: .milliseconds(30)) }
         reader.stop()
         errorReader.stop()
-        self?.processes[id] = nil
         run.ended(status: code, stoppedByPerson: stopped)
-        if run.didSucceed {
-          self?.app.statuses.markBuilt(id, repository: run.repository.path, summary: run.summary, session: run.sessionId)
+        if let summary = run.builtSummary {
+          self?.app.statuses.markBuilt(id, repository: run.repository.path, summary: summary, session: run.sessionId)
         }
       }
     }
@@ -206,13 +205,13 @@ final class Handoffs {
       run.fail("Couldn't start Claude Code. \(error.localizedDescription)")
       return
     }
-    processes[id] = process
+    run.started(process)
     try? input.fileHandleForWriting.write(contentsOf: Data(prompt.utf8))
     try? input.fileHandleForWriting.close()
   }
 
   func stop(_ id: String) {
-    processes[id]?.terminate()
+    runs[id]?.stop()
   }
 
   /// Picks the conversation up in Terminal through a `.command` file, which needs no automation permission.
@@ -239,6 +238,6 @@ final class Handoffs {
   }
 
   func stopAll() {
-    processes.values.forEach { $0.terminate() }
+    runs.values.forEach { $0.stop() }
   }
 }

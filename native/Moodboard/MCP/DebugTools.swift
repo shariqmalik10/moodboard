@@ -25,7 +25,7 @@
         return true
       case "debug.handoff":
         guard let id = params["id"] as? String, let run = model.handoffs.run(for: id) else { return NSNull() }
-        return ["status": run.status, "active": run.isActive, "session": run.sessionId ?? "", "changed": run.changedFiles.sorted()] as JSON
+        return ["status": run.status, "active": run.isWorking, "session": run.sessionId ?? "", "changed": run.changedFiles.sorted()] as JSON
       case "debug.close":
         model.focus?.close()
         return true

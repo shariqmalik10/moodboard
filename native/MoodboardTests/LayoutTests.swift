@@ -158,13 +158,19 @@ struct SpringTests {
 
   @MainActor @Test func aRunReportsChangedFilesAndKeepsItsEnding() {
     let run = HandoffRun(repository: URL(filePath: "/repo"))
+    run.started(Process())
     run.apply(.working("Editing a.ts", changed: "/repo/a.ts"))
     run.apply(.working("Editing a.ts", changed: "/repo/a.ts"))
     run.apply(.finished("Built it.", session: "s"))
     #expect(run.status == "1 file changed. Built it.")
-    #expect(!run.isActive)
+    #expect(!run.isWorking)
+    // Its process is still alive, so another send waits for it.
+    #expect(!run.isOver)
+    #expect(run.builtSummary == nil)
     run.ended(status: 0, stoppedByPerson: false)
     #expect(run.status == "1 file changed. Built it.")
+    #expect(run.isOver)
+    #expect(run.builtSummary == "Built it.")
   }
 
   @MainActor @Test func anExpiredLoginAsksForASignIn() {
@@ -176,8 +182,17 @@ struct SpringTests {
 
   @MainActor @Test func aMissingCommandIsSaidPlainly() {
     let run = HandoffRun(repository: URL(filePath: "/repo"))
+    run.started(Process())
     run.noteError("zsh: command not found: claude")
     run.ended(status: 127, stoppedByPerson: false)
     #expect(run.status.contains("Couldn't find Claude Code"))
+    #expect(run.isOver)
+  }
+
+  @MainActor @Test func aRunThatNeverStartedIsOver() {
+    let run = HandoffRun(repository: URL(filePath: "/repo"))
+    run.fail("Couldn't read the component.")
+    #expect(run.isOver)
+    #expect(!run.isWorking)
   }
 }
