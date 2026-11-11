@@ -196,3 +196,25 @@ struct SpringTests {
     #expect(!run.isWorking)
   }
 }
+
+@Suite struct ClaudeRegistrationTests {
+  let output = """
+    moodboard:
+      Scope: User config (available in all your projects)
+      Status: ✔ Connected
+      Type: stdio
+      Command: /Volumes/Work/Applications/Moodboard.app/Contents/MacOS/Moodboard
+      Args: --mcp
+    """
+
+  @Test func readsTheRegisteredCommand() {
+    #expect(ClaudeRegistration.command(in: output) == "/Volumes/Work/Applications/Moodboard.app/Contents/MacOS/Moodboard")
+    #expect(ClaudeRegistration.command(in: "No MCP server named \"moodboard\".") == nil)
+  }
+
+  @Test func namesTheOtherAppOnlyWhenItIsntThisOne() {
+    let command = "/Volumes/Work/Applications/Moodboard.app/Contents/MacOS/Moodboard"
+    #expect(ClaudeRegistration.otherApp(command, this: command) == nil)
+    #expect(ClaudeRegistration.otherApp(command, this: "/Applications/Moodboard.app/Contents/MacOS/Moodboard") == "/Volumes/Work/Applications/Moodboard.app")
+  }
+}
