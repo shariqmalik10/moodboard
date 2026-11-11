@@ -135,6 +135,8 @@ final class ProjectServer {
 
   func write(id: String, values: JSON) async throws -> JSON {
     let body = try JSONSerialization.data(withJSONObject: ["id": id, "values": values] as JSON)
-    return try JSONSerialization.jsonObject(with: try await request("/__moodboard/write", body: body)) as? JSON ?? [:]
+    let result = try JSONSerialization.jsonObject(with: try await request("/__moodboard/write", body: body)) as? JSON ?? [:]
+    if let error = result["error"] as? String { throw ToolError(error) }
+    return result
   }
 }

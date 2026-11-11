@@ -147,6 +147,15 @@ const readBody = (request: IncomingMessage) =>
 /** One address the server answers itself. `trusted` ones answer only the app, which sends the token. */
 type Route = { trusted?: boolean; method?: string; answer: (url: URL, request: IncomingMessage, response: ServerResponse) => unknown };
 
+/** A request that fails answers with why, so the app can say so, instead of ending the server for every tile. */
+const answering =
+  (handle: (request: IncomingMessage, response: ServerResponse, next: () => void) => Promise<void>) =>
+  (request: IncomingMessage, response: ServerResponse, next: () => void) =>
+    handle(request, response, next).catch((reason: NodeJS.ErrnoException) => {
+      const refused = reason.code === "EPERM" || reason.code === "EACCES";
+      json(response, { error: refused ? "Moodboard isn't allowed to change it. Check that you can write to its folder, or, if macOS asked, turn Moodboard on in System Settings, under Privacy & Security, Files and Folders." : reason.message }, 500);
+    });
+
 function routes(server: ViteDevServer): Record<string, Route> {
   return {
     "/stage.html": {
@@ -252,7 +261,7 @@ function moodboard(): Plugin {
     },
     configureServer(server) {
       const table = routes(server);
-      server.middlewares.use(async (request, response, next) => {
+      server.middlewares.use(answering(async (request, response, next) => {
         const url = new URL(request.url ?? "/", "http://local");
         const route = table[url.pathname];
         if (route && (!route.method || route.method === request.method)) {
@@ -262,7 +271,7 @@ function moodboard(): Plugin {
         }
         if (cursor(url, response)) return;
         next();
-      });
+      }));
       const saved = watchSaves(server);
       const changed = (file: string) => {
         const relative = path.relative(root, file);
