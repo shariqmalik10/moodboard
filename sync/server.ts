@@ -3,7 +3,7 @@ import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import react from "@vitejs/plugin-react";
-import { createServer, type Plugin, type ViteDevServer } from "vite";
+import { createServer, transformWithEsbuild, type Plugin, type ViteDevServer } from "vite";
 import { dialConfig, readComponent, readCss } from "./literals.ts";
 import { aliases, componentModule, globalsModule, googleFontsModule, type Places, SAMPLE_FOLDER, shims } from "./modules.ts";
 import { Samples } from "./samples.ts";
@@ -261,6 +261,11 @@ function moodboard(): Plugin {
         return component ? componentModule(component, scanner, places, sampleOf(component).props) : "export default function Missing() { return null; }";
       }
       return null;
+    },
+    transform(code, id) {
+      // Vite reads JSX only in .jsx and .tsx files, and Next.js projects written in JavaScript keep it in .js files.
+      if (!id.endsWith(".js") || !id.startsWith(root) || id.includes("/node_modules/") || !code.includes("<")) return null;
+      return transformWithEsbuild(code, id, { loader: "jsx", jsx: "automatic" });
     },
     configureServer(server) {
       const table = routes(server);

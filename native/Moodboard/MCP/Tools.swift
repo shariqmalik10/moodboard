@@ -201,7 +201,7 @@ final class Tools {
     } else if !settled {
       result["next"] = "\(model.projects.waitingReason(slug) ?? "It's still starting.") Call list_projects in a moment to see how it's going."
     } else if line.shown == 0, line.skipped.isEmpty {
-      result["next"] = "Moodboard found no components in it. It shows .tsx files that export a React component, and leaves out pages, layouts, tests, stories and server-only files."
+      result["next"] = "Moodboard found no components in it. It shows .tsx, .jsx and .js files that export a React component, and leaves out pages, layouts, tests, stories and server-only files."
     } else if line.shown == 0 {
       result["next"] = "None of its components could stand alone on the wall. notShown says why for each."
     } else {

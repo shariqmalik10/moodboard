@@ -79,3 +79,35 @@ describe("scanning a project", () => {
     after.forEach((hash, at) => expect(hash).not.toBe(before[at]));
   });
 });
+
+describe("scanning a project written in JavaScript", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "moodboard-scan-js-"));
+  const write = (file: string, text: string) => {
+    fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+    fs.writeFileSync(path.join(root, file), text);
+  };
+  write("package.json", `{"name":"plain"}`);
+  write("jsconfig.json", `{"compilerOptions":{"paths":{"@/*":["./src/*"]}}}`);
+  write("src/app/layout.js", `import "./globals.css";\nimport { GardenProvider } from "@/app/providers";\nexport default function RootLayout({ children }) { return <html><body className="base"><GardenProvider>{children}</GardenProvider></body></html>; }\n`);
+  write("src/app/globals.css", `.base { color: red; }\n`);
+  write("src/app/page.js", `export default function Page() { return <div />; }\n`);
+  write("src/app/providers.js", `export function GardenProvider({ children }) { return <div>{children}</div>; }\n`);
+  write("src/components/Card.js", `import { Pip } from "@/components/Pip";\nexport function Card() { return <Pip />; }\n`);
+  write("src/components/Pip.jsx", `export default function Pip() { return <i />; }\n`);
+  write("next.config.js", `module.exports = {};\n`);
+  afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
+  const scanner = new Scanner(root);
+  scanner.scan();
+
+  it("finds components in .js and .jsx files, and leaves out pages", () => {
+    expect(scanner.components().map((each) => [each.id, each.file])).toEqual([
+      ["project/plain/src/components/Card/Card", "src/components/Card.js"],
+      ["project/plain/src/components/Pip/default", "src/components/Pip.jsx"],
+    ]);
+  });
+
+  it("reads the layout and its providers through jsconfig's paths", () => {
+    expect(scanner.layout.css).toEqual([path.join(root, "src/app/globals.css")]);
+    expect(scanner.layout.providers.map((each) => each.module)).toEqual([path.join(root, "src/app/providers.js")]);
+  });
+});
