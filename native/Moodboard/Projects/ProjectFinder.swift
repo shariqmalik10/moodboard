@@ -40,7 +40,7 @@ nonisolated enum ProjectFinder {
       return .problem("\(folder.lastPathComponent) has no package.json, so it isn't a JavaScript project. Choose the folder of a Next.js app.")
     }
     guard found.usesReact else { return .problem("\(nearest.lastPathComponent) doesn't use React, so it has no components to show. Moodboard connects Next.js apps.") }
-    return installed(nearest, note: "\(nearest.lastPathComponent) uses React without Next.js. Moodboard shows its .tsx components the same way, but it's made for Next.js apps.")
+    return installed(nearest, note: "\(nearest.lastPathComponent) uses React without Next.js. Moodboard shows its components the same way, but it's made for Next.js apps.")
   }
 
   static let refused = "Moodboard can't read this folder. If macOS asks, choose Allow, or turn Moodboard on in System Settings, under Privacy & Security, Files and Folders."

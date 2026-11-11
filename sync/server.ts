@@ -3,7 +3,7 @@ import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import react from "@vitejs/plugin-react";
-import { createServer, type Plugin, type ViteDevServer } from "vite";
+import { createServer, loadEnv, transformWithEsbuild, type Plugin, type ViteDevServer } from "vite";
 import { dialConfig, readComponent, readCss } from "./literals.ts";
 import { aliases, componentModule, globalsModule, googleFontsModule, type Places, SAMPLE_FOLDER, shims } from "./modules.ts";
 import { Samples } from "./samples.ts";
@@ -36,6 +36,9 @@ const PAGE_GUARD = `(() => {
   window.open = () => null;
   addEventListener("click", (event) => { if (event.target.closest?.("a[href]")) event.preventDefault(); }, true);
   addEventListener("submit", (event) => event.preventDefault(), true);
+  HTMLFormElement.prototype.submit = () => {};
+  const sendSocket = WebSocket.prototype.send;
+  WebSocket.prototype.send = function (data) { if (new URL(this.url).host === location.host) sendSocket.call(this, data); };
 })();`;
 
 const say = (message: Record<string, unknown>) => process.stdout.write(`${JSON.stringify(message)}\n`);
@@ -147,6 +150,15 @@ const readBody = (request: IncomingMessage) =>
 /** One address the server answers itself. `trusted` ones answer only the app, which sends the token. */
 type Route = { trusted?: boolean; method?: string; answer: (url: URL, request: IncomingMessage, response: ServerResponse) => unknown };
 
+/** A request that fails answers with why, so the app can say so, instead of ending the server for every tile. */
+const answering =
+  (handle: (request: IncomingMessage, response: ServerResponse, next: () => void) => Promise<void>) =>
+  (request: IncomingMessage, response: ServerResponse, next: () => void) =>
+    handle(request, response, next).catch((reason: NodeJS.ErrnoException) => {
+      const refused = reason.code === "EPERM" || reason.code === "EACCES";
+      json(response, { error: refused ? "Moodboard isn't allowed to change it. Check that you can write to its folder, or, if macOS asked, turn Moodboard on in System Settings, under Privacy & Security, Files and Folders." : reason.message }, 500);
+    });
+
 function routes(server: ViteDevServer): Record<string, Route> {
   return {
     "/stage.html": {
@@ -250,9 +262,14 @@ function moodboard(): Plugin {
       }
       return null;
     },
+    transform(code, id) {
+      // Vite reads JSX only in .jsx and .tsx files, and Next.js projects written in JavaScript keep it in .js files.
+      if (!id.endsWith(".js") || !id.startsWith(root) || id.includes("/node_modules/") || !code.includes("<")) return null;
+      return transformWithEsbuild(code, id, { loader: "jsx", jsx: "automatic" });
+    },
     configureServer(server) {
       const table = routes(server);
-      server.middlewares.use(async (request, response, next) => {
+      server.middlewares.use(answering(async (request, response, next) => {
         const url = new URL(request.url ?? "/", "http://local");
         const route = table[url.pathname];
         if (route && (!route.method || route.method === request.method)) {
@@ -262,7 +279,7 @@ function moodboard(): Plugin {
         }
         if (cursor(url, response)) return;
         next();
-      });
+      }));
       const saved = watchSaves(server);
       const changed = (file: string) => {
         const relative = path.relative(root, file);
@@ -276,18 +293,8 @@ function moodboard(): Plugin {
   };
 }
 
-function publicEnv() {
-  const env: Record<string, string> = { NODE_ENV: "development" };
-  for (const name of [".env", ".env.development", ".env.local", ".env.development.local"]) {
-    try {
-      for (const entry of fs.readFileSync(path.join(root, name), "utf8").split("\n")) {
-        const match = entry.match(/^\s*(NEXT_PUBLIC_[A-Z0-9_]+)\s*=\s*(.*)$/);
-        if (match?.[1]) env[match[1]] = (match[2] ?? "").replace(/^["']|["']$/g, "");
-      }
-    } catch {}
-  }
-  return env;
-}
+/** The same files Next.js reads in development, with the same comments, quotes and `${NAME}` expansion. */
+const publicEnv = () => ({ NODE_ENV: "development", ...loadEnv("development", root, "NEXT_PUBLIC_") });
 
 const server = await createServer({
   configFile: false,

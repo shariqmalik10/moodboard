@@ -109,6 +109,7 @@ final class AppModel {
   /// The row in hand stays even after it leaves a status, so that status isn't empty yet.
   var isTuningInList: Bool { list?.isActive == true && list?.selectedId != nil }
   private(set) lazy var tools = Tools(model: self)
+  private(set) lazy var snapshots = Snapshots(host: host, backstage: root.backstage)
   private(set) lazy var handoffs = Handoffs(app: self)
   private(set) lazy var projects = ProjectSync(app: self)
   private(set) lazy var connector = ProjectConnector(app: self)

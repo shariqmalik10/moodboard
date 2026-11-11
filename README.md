@@ -114,6 +114,7 @@ The app answers through `Moodboard --mcp`. If the wall is closed, the first call
 | `status` | The component count, the open component, and what Paper has open and selected. |
 | `list_components` | Every component with its id, title, project, whether it's on the wall, and its build state and note. |
 | `get_component` | A component's brief: the note, the tuned values, the JSX with the tune applied, and the CSS. |
+| `look_at_component` | A picture of a component as it draws now, with your tune, taken out of sight. Claude Code can check an edit without you looking. |
 | `open_component` | Brings the window forward and opens a component. |
 | `set_dials` | Sets dial values. On a project component it writes the source file. |
 | `set_note` | Writes a component's note. |

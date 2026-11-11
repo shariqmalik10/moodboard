@@ -5,6 +5,7 @@ enum ToolName: String, CaseIterable {
   case status
   case listComponents = "list_components"
   case getComponent = "get_component"
+  case lookAtComponent = "look_at_component"
   case importFromPaper = "import_from_paper"
   case openComponent = "open_component"
   case setDials = "set_dials"
@@ -36,6 +37,7 @@ final class Tools {
     case .status: return await status()
     case .listComponents: return try await listComponents()
     case .getComponent: return try await brief(try componentId(params))
+    case .lookAtComponent: return try await look(try componentId(params))
     case .importFromPaper: return try await importFromPaper(params)
     case .openComponent: return try await openComponent(try componentId(params))
     case .setDials: return try await setDials(try componentId(params), params["values"] as? JSON ?? [:])
@@ -72,6 +74,15 @@ final class Tools {
     if !note.isEmpty { brief["note"] = note }
     brief["place"] = place(of: id)
     return brief
+  }
+
+  /// The component as it draws now. The bridge hands `image` to Claude Code as a picture, and the rest as text.
+  private func look(_ id: String) async throws -> JSON {
+    guard let item = model.store?.items[id] else { throw ToolError("There's no component called \(id).") }
+    let picture = try await model.snapshots.picture(of: item)
+    var about: JSON = ["id": id, "title": item.title, "place": place(of: id)]
+    if case .component(_, let crop) = item.body { about["size"] = ["width": crop.w, "height": crop.h] }
+    return ["image": picture.base64EncodedString(), "about": about]
   }
 
   /// Where a component stands in the loop, in the words the person sees.
@@ -201,7 +212,7 @@ final class Tools {
     } else if !settled {
       result["next"] = "\(model.projects.waitingReason(slug) ?? "It's still starting.") Call list_projects in a moment to see how it's going."
     } else if line.shown == 0, line.skipped.isEmpty {
-      result["next"] = "Moodboard found no components in it. It shows .tsx files that export a React component, and leaves out pages, layouts, tests, stories and server-only files."
+      result["next"] = "Moodboard found no components in it. It shows .tsx, .jsx and .js files that export a React component, and leaves out pages, layouts, tests, stories and server-only files."
     } else if line.shown == 0 {
       result["next"] = "None of its components could stand alone on the wall. notShown says why for each."
     } else {

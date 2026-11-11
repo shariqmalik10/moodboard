@@ -5,8 +5,12 @@ import ts from "typescript";
 import type { Found } from "./types.ts";
 
 const SKIPPED_FOLDERS = new Set(["node_modules", ".next", "out", "dist", "build", "public", "coverage", "scripts", "workers", "extension", "supabase", "db", "docs", "design", "research"]);
-const NOT_COMPONENTS = /(^|\/)(page|layout|loading|error|global-error|not-found|template|default|route|opengraph-image|twitter-image|icon|apple-icon|middleware|proxy)\.tsx$/;
-const TEST_OR_DEMO = /\.(test|spec|stories|moodboard)\.tsx$/;
+/** A file that can hold a component. Next.js lets `.js` files hold JSX, and its JavaScript template writes them. */
+const COMPONENT_FILE = /\.(tsx|jsx|js)$/;
+const SOURCE_FILE = /\.[jt]sx?$/;
+const NOT_COMPONENTS = /(^|\/)(page|layout|loading|error|global-error|not-found|template|default|route|opengraph-image|twitter-image|icon|apple-icon|middleware|proxy)\.(tsx|jsx|js)$/;
+const TEST_OR_DEMO = /\.(test|spec|stories|moodboard)\.(tsx|jsx|js)$/;
+const isLayout = (file: string) => /^layout\.(tsx|jsx|js)$/.test(path.basename(file));
 const SERVER_ONLY = new Set(["next/headers", "server-only"]);
 
 export type Layout = {
@@ -61,7 +65,7 @@ const isDefault = (node: ts.Node) => ts.canHaveModifiers(node) && Boolean(ts.get
 const named = (name: string) => /^[A-Z]/.test(name);
 
 export function readFile(text: string, file: string): FileFacts {
-  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, /\.jsx?$/.test(file) ? ts.ScriptKind.JSX : ts.ScriptKind.TSX);
   const imports: string[] = [];
   const exports: FileFacts["exports"] = [];
   const local = new Map<string, ts.Node>();
@@ -78,7 +82,7 @@ export function readFile(text: string, file: string): FileFacts {
       if (isExported(statement) && named(statement.name.text) && drawsJsx(statement)) exports.push({ name: statement.name.text, exportName: isDefault(statement) ? "default" : statement.name.text });
     }
     if (ts.isFunctionDeclaration(statement) && !statement.name && isDefault(statement) && drawsJsx(statement)) {
-      const base = path.basename(file, ".tsx");
+      const base = path.parse(file).name;
       exports.push({ name: base.charAt(0).toUpperCase() + base.slice(1), exportName: "default" });
     }
     if (ts.isVariableStatement(statement)) {
@@ -92,7 +96,7 @@ export function readFile(text: string, file: string): FileFacts {
       const target = ts.isIdentifier(statement.expression) ? statement.expression.text : null;
       if (target && named(target) && drawsJsx(local.get(target))) exports.push({ name: target, exportName: "default" });
       else if (!target && drawsJsx(statement.expression)) {
-        const base = path.basename(file, ".tsx");
+        const base = path.parse(file).name;
         exports.push({ name: base.charAt(0).toUpperCase() + base.slice(1), exportName: "default" });
       }
     }
@@ -122,9 +126,9 @@ export class Scanner {
 
   constructor(root: string, slugOverride?: string) {
     this.root = root;
-    const config = ts.findConfigFile(root, ts.sys.fileExists, "tsconfig.json");
+    const config = ts.findConfigFile(root, ts.sys.fileExists, "tsconfig.json") ?? ts.findConfigFile(root, ts.sys.fileExists, "jsconfig.json");
     const parsed = config ? ts.parseJsonConfigFileContent(ts.readConfigFile(config, ts.sys.readFile).config, ts.sys, path.dirname(config)) : null;
-    this.options = { ...parsed?.options, jsx: ts.JsxEmit.Preserve, noEmit: true, skipLibCheck: true, incremental: false, composite: false, tsBuildInfoFile: undefined };
+    this.options = { ...parsed?.options, allowJs: true, jsx: ts.JsxEmit.Preserve, noEmit: true, skipLibCheck: true, incremental: false, composite: false, tsBuildInfoFile: undefined };
     let name = path.basename(root);
     try {
       name = (JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")) as { name?: string }).name ?? name;
@@ -139,7 +143,7 @@ export class Scanner {
       if (entry.name.startsWith(".") || SKIPPED_FOLDERS.has(entry.name)) continue;
       const full = path.join(folder, entry.name);
       if (entry.isDirectory()) this.walk(full, out);
-      else if (/\.tsx?$/.test(entry.name) && !entry.name.endsWith(".d.ts")) out.push(full);
+      else if (SOURCE_FILE.test(entry.name) && !entry.name.endsWith(".d.ts")) out.push(full);
     }
     return out;
   }
@@ -167,16 +171,16 @@ export class Scanner {
       this.cssTexts.delete(file);
       return;
     }
-    if (!/\.tsx?$/.test(file) || file.endsWith(".d.ts")) return;
+    if (!SOURCE_FILE.test(file) || file.endsWith(".d.ts")) return;
     const relative = path.relative(this.root, file);
     if (relative.split(path.sep).some((part) => part.startsWith(".") || SKIPPED_FOLDERS.has(part))) return;
     this.readInto(file);
-    if (path.basename(file) === "layout.tsx") this.readLayout();
+    if (isLayout(file)) this.readLayout();
   }
 
   /** Every `*Provider` that wraps `{children}` in a layout, shallowest layout first. */
   private readProviders(): Provider[] {
-    const layouts = [...this.facts.keys()].filter((file) => path.basename(file) === "layout.tsx").sort((a, b) => a.split(path.sep).length - b.split(path.sep).length);
+    const layouts = [...this.facts.keys()].filter(isLayout).sort((a, b) => a.split(path.sep).length - b.split(path.sep).length);
     const out = new Map<string, Provider>();
     for (const file of layouts) {
       const source = ts.createSourceFile(file, this.facts.get(file)?.text ?? "", ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -212,7 +216,7 @@ export class Scanner {
   }
 
   private readLayout() {
-    const file = [path.join(this.root, "src/app/layout.tsx"), path.join(this.root, "app/layout.tsx")].find((each) => fs.existsSync(each));
+    const file = ["src/app", "app"].flatMap((folder) => ["tsx", "jsx", "js"].map((extension) => path.join(this.root, folder, `layout.${extension}`))).find((each) => fs.existsSync(each));
     this.googleFonts.clear();
     for (const facts of this.facts.values()) {
       if (!facts.imports.includes("next/font/google")) continue;
@@ -340,7 +344,7 @@ export class Scanner {
     const wrapping = new Set(this.layout.providers.map((each) => `${each.module}#${each.exportName}`));
     for (const [file, facts] of this.facts) {
       const relative = path.relative(this.root, file).split(path.sep).join("/");
-      if (!file.endsWith(".tsx") || NOT_COMPONENTS.test(relative) || TEST_OR_DEMO.test(relative) || relative.startsWith("pages/") || facts.isServer || facts.exports.length === 0) continue;
+      if (!COMPONENT_FILE.test(file) || NOT_COMPONENTS.test(relative) || TEST_OR_DEMO.test(relative) || /^(src\/)?pages\//.test(relative) || facts.isServer || facts.exports.length === 0) continue;
       const seen = new Set<string>();
       for (const each of facts.exports) {
         if (seen.has(each.exportName) || wrapping.has(`${file}#${each.exportName}`)) continue;
@@ -350,8 +354,8 @@ export class Scanner {
           hash = this.hashOf(file);
           hashes.set(file, hash);
         }
-        const sidecar = file.replace(/\.tsx$/, ".moodboard.tsx");
-        out.push({ id: `project/${this.slug}/${relative.replace(/\.tsx$/, "")}/${each.exportName}`, title: words(each.name), file: relative, exportName: each.exportName, hash, sidecar: fs.existsSync(sidecar) ? path.relative(this.root, sidecar) : undefined });
+        const sidecar = file.replace(COMPONENT_FILE, ".moodboard.$1");
+        out.push({ id: `project/${this.slug}/${relative.replace(COMPONENT_FILE, "")}/${each.exportName}`, title: words(each.name), file: relative, exportName: each.exportName, hash, sidecar: fs.existsSync(sidecar) ? path.relative(this.root, sidecar) : undefined });
       }
     }
     return out.sort((a, b) => a.id.localeCompare(b.id));

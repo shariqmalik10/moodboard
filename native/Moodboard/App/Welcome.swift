@@ -5,7 +5,8 @@ import SwiftUI
 @Observable
 final class WelcomeModel {
   enum Node: Equatable { case checking, ready(String), tooOld(String), missing }
-  enum Claude: Equatable { case checking, missing, notAdded, adding, added, failed(String) }
+  /// `elsewhere` holds the app Claude Code opens instead of this one, which may no longer be there.
+  enum Claude: Equatable { case checking, missing, notAdded, adding, added, elsewhere(String), failed(String) }
   enum Demo: Equatable { case idle, copying, failed(String) }
 
   var node = Node.checking
@@ -15,6 +16,23 @@ final class WelcomeModel {
   var canRunProjects: Bool {
     if case .ready = node { return true }
     return false
+  }
+}
+
+/// Which Moodboard Claude Code runs, read from `claude mcp get moodboard`.
+nonisolated enum ClaudeRegistration {
+  static func command(in output: String) -> String? {
+    output.split(whereSeparator: \.isNewline).lazy.map { $0.trimmingCharacters(in: .whitespaces) }
+      .first { $0.hasPrefix("Command:") }
+      .map { $0.dropFirst("Command:".count).trimmingCharacters(in: .whitespaces) }
+  }
+
+  /// The app a registered command opens, or nil when it opens this one.
+  static func otherApp(_ command: String, this executable: String) -> String? {
+    let resolved = { (path: String) in URL(filePath: path).resolvingSymlinksInPath().standardizedFileURL.path }
+    guard resolved(command) != resolved(executable) else { return nil }
+    let app = command.range(of: ".app/", options: .backwards).map { String(command[..<$0.lowerBound]) + ".app" } ?? command
+    return app
   }
 }
 
@@ -102,7 +120,16 @@ final class WelcomeController {
     if claude.status != 0 {
       state.claude = .missing
     } else {
-      state.claude = await Shell.run("claude mcp get moodboard").status == 0 ? .added : .notAdded
+      let registered = await Shell.run("claude mcp get moodboard")
+      if registered.status != 0 {
+        state.claude = .notAdded
+      } else if let command = ClaudeRegistration.command(in: registered.output), let executable = Bundle.main.executableURL?.path,
+        let other = ClaudeRegistration.otherApp(command, this: executable)
+      {
+        state.claude = .elsewhere(other)
+      } else {
+        state.claude = .added
+      }
     }
   }
 
@@ -149,7 +176,8 @@ final class WelcomeController {
     guard let executable = Bundle.main.executableURL?.path else { return }
     state.claude = .adding
     Task {
-      let added = await Shell.run("claude mcp add -s user moodboard -- \"$1\" --mcp", [executable])
+      // Replaces an entry that opens another copy of the app, such as one that was moved or deleted.
+      let added = await Shell.run("claude mcp remove -s user moodboard >/dev/null 2>&1; claude mcp add -s user moodboard -- \"$1\" --mcp", [executable])
       state.claude = added.status == 0 ? .added : .failed(added.output.split(separator: "\n").last.map(String.init) ?? "claude mcp add failed.")
     }
   }
@@ -251,6 +279,12 @@ struct WelcomeView: View {
       return ("Adding Moodboard to Claude Code…", AnyView(ProgressView().controlSize(.small)))
     case .added:
       return ("Claude Code can see the wall.", AnyView(Mark(ok: true)))
+    case .elsewhere(let app):
+      let place = NSString(string: app).abbreviatingWithTildeInPath
+      let detail = FileManager.default.fileExists(atPath: app)
+        ? "Claude Code opens the Moodboard at \(place), not this one."
+        : "Claude Code is set up for a Moodboard that's no longer at \(place)."
+      return (detail, AnyView(Button("Use This One", action: onClaude)))
     case .failed(let reason):
       return (reason, AnyView(Button("Try again", action: onClaude)))
     }
