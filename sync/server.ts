@@ -3,7 +3,7 @@ import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import react from "@vitejs/plugin-react";
-import { createServer, transformWithEsbuild, type Plugin, type ViteDevServer } from "vite";
+import { createServer, loadEnv, transformWithEsbuild, type Plugin, type ViteDevServer } from "vite";
 import { dialConfig, readComponent, readCss } from "./literals.ts";
 import { aliases, componentModule, globalsModule, googleFontsModule, type Places, SAMPLE_FOLDER, shims } from "./modules.ts";
 import { Samples } from "./samples.ts";
@@ -293,18 +293,8 @@ function moodboard(): Plugin {
   };
 }
 
-function publicEnv() {
-  const env: Record<string, string> = { NODE_ENV: "development" };
-  for (const name of [".env", ".env.development", ".env.local", ".env.development.local"]) {
-    try {
-      for (const entry of fs.readFileSync(path.join(root, name), "utf8").split("\n")) {
-        const match = entry.match(/^\s*(NEXT_PUBLIC_[A-Z0-9_]+)\s*=\s*(.*)$/);
-        if (match?.[1]) env[match[1]] = (match[2] ?? "").replace(/^["']|["']$/g, "");
-      }
-    } catch {}
-  }
-  return env;
-}
+/** The same files Next.js reads in development, with the same comments, quotes and `${NAME}` expansion. */
+const publicEnv = () => ({ NODE_ENV: "development", ...loadEnv("development", root, "NEXT_PUBLIC_") });
 
 const server = await createServer({
   configFile: false,
