@@ -31,6 +31,12 @@ enum MCPBridge {
         "Gets a component as the person tuned it. Returns markdown (the brief to build from), note (what the person wants, if they left one), place (where it stands in the loop), changes (each dial moved, from and to), dials (every dial path), css, jsx (the design with the tune applied, for a design from Paper) and source. With no id, it gets the component the person has open.",
         ["id": string("Component id. Leave it out for the one open on the wall.")]
       )
+    case .lookAtComponent:
+      tool(
+        name,
+        "Returns a picture of a component as it draws right now: the source as saved, with the person's tune, at rest before its loop starts. Use it to check how an edit or a set_dials call looks. It works backstage, so it doesn't open the wall's window or take focus.",
+        ["id": string("Component id. Leave it out for the one open on the wall.")]
+      )
     case .importFromPaper:
       tool(
         name,
@@ -167,6 +173,10 @@ enum MCPBridge {
       var arguments = arguments
       if name == ToolName.connectProject.rawValue { arguments["path"] = try projectPath(arguments["path"] as? String) }
       let result = try WallSocket.ask(name, arguments)
+      if let answer = result as? JSON, let image = answer["image"] as? String {
+        let about = try JSONSerialization.data(withJSONObject: answer["about"] ?? [:], options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+        return ["content": [["type": "image", "data": image, "mimeType": "image/png"], ["type": "text", "text": String(decoding: about, as: UTF8.self)]]]
+      }
       let data = try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys, .fragmentsAllowed, .withoutEscapingSlashes])
       return ["content": [["type": "text", "text": String(decoding: data, as: UTF8.self)]]]
     } catch {

@@ -32,6 +32,7 @@
 		9A36D0A29FEF23606C157F76 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 837D9AA74E9E0E0A7A3411C3 /* AppDelegate.swift */; };
 		9F845EEF93B9BF854FD7CFB0 /* WebHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 902A0A6F20FD6D0D0BF86BBC /* WebHost.swift */; };
 		A04504D9DCBF58A372E9B8B6 /* Chrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E7BCBE67E2CC4CA3539C3EC /* Chrome.swift */; };
+		A360511BBEAE63C725814FDE /* Snapshots.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8857A5903471767880F3D192 /* Snapshots.swift */; };
 		A3FB69B18EA965E70D57B6A3 /* PaperWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 065CA96706AE2CCBC1B1C80A /* PaperWatch.swift */; };
 		A71C2C53223C32A61A31C751 /* ViewsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9079BE21C60FEFEEADE46812 /* ViewsTests.swift */; };
 		AA61CA029F3D5F8101FA27D2 /* Status.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0FB2F3CA021456A6C8759FC /* Status.swift */; };
@@ -89,6 +90,7 @@
 		64623353DAAA9C8EFD1F7561 /* ProjectSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSync.swift; sourceTree = "<group>"; };
 		72CD0B638F4E098C4A1A58C0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		837D9AA74E9E0E0A7A3411C3 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		8857A5903471767880F3D192 /* Snapshots.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snapshots.swift; sourceTree = "<group>"; };
 		8BA49D9E67FAB21FA7D43C84 /* Dials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dials.swift; sourceTree = "<group>"; };
 		8CC9800B0331045504E847A3 /* Importer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Importer.swift; sourceTree = "<group>"; };
 		902A0A6F20FD6D0D0BF86BBC /* WebHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebHost.swift; sourceTree = "<group>"; };
@@ -254,6 +256,7 @@
 				C80CC225508BB62E3C7519EF /* LiveStage.swift */,
 				223F67F2B9A7AB1D9FDA856F /* Motion.swift */,
 				0B6A3BE74A65D527812510A2 /* Plates.swift */,
+				8857A5903471767880F3D192 /* Snapshots.swift */,
 				CDA2887049538FE37EDED35E /* TileView.swift */,
 			);
 			path = Canvas;
@@ -420,6 +423,7 @@
 				13B6CB5E23704A46ABDB9679 /* ProjectServer.swift in Sources */,
 				0E39C55587448ACB6EED3D02 /* ProjectSync.swift in Sources */,
 				210E9303466DBD93D9F0FA5D /* ProjectsPanel.swift in Sources */,
+				A360511BBEAE63C725814FDE /* Snapshots.swift in Sources */,
 				ACCC4BC1DACB7F3B78E00067 /* SocketServer.swift in Sources */,
 				AA61CA029F3D5F8101FA27D2 /* Status.swift in Sources */,
 				5C95CE78B0B0CD36A5DB0FAE /* TileView.swift in Sources */,
