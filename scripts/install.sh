@@ -35,6 +35,8 @@ echo "Installed $DEST/Moodboard.app"
 
 if ! command -v node >/dev/null 2>&1; then
   echo "Moodboard runs your projects with Node 20.19 or newer. Get it from https://nodejs.org"
+elif ! node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit(a>20||(a===20&&b>=19)?0:1)' 2>/dev/null; then
+  echo "Moodboard runs your projects with Node 20.19 or newer, and this Mac has $(node --version). Get a newer one from https://nodejs.org"
 fi
 
 open "$DEST/Moodboard.app"
