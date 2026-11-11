@@ -36,6 +36,9 @@ const PAGE_GUARD = `(() => {
   window.open = () => null;
   addEventListener("click", (event) => { if (event.target.closest?.("a[href]")) event.preventDefault(); }, true);
   addEventListener("submit", (event) => event.preventDefault(), true);
+  HTMLFormElement.prototype.submit = () => {};
+  const sendSocket = WebSocket.prototype.send;
+  WebSocket.prototype.send = function (data) { if (new URL(this.url).host === location.host) sendSocket.call(this, data); };
 })();`;
 
 const say = (message: Record<string, unknown>) => process.stdout.write(`${JSON.stringify(message)}\n`);
