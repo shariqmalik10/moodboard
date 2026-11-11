@@ -42,6 +42,8 @@ describe("scanning a project", () => {
   write("components/card.tsx", `import { Pip } from "./pip";\nexport function Card() { return <Pip />; }\n`);
   write("components/pip.tsx", `export function Pip() { return <i />; }\n`);
   write("components/card.test.tsx", `export function NotAComponent() { return <div />; }\n`);
+  write("pages/old.tsx", `export default function Old() { return <div />; }\n`);
+  write("src/pages/_app.tsx", `export default function App() { return <div />; }\n`);
   write("node_modules/x/index.tsx", `export function Nope() { return <div />; }\n`);
   afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
   const scanner = new Scanner(root);

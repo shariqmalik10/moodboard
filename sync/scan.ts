@@ -344,7 +344,7 @@ export class Scanner {
     const wrapping = new Set(this.layout.providers.map((each) => `${each.module}#${each.exportName}`));
     for (const [file, facts] of this.facts) {
       const relative = path.relative(this.root, file).split(path.sep).join("/");
-      if (!COMPONENT_FILE.test(file) || NOT_COMPONENTS.test(relative) || TEST_OR_DEMO.test(relative) || relative.startsWith("pages/") || facts.isServer || facts.exports.length === 0) continue;
+      if (!COMPONENT_FILE.test(file) || NOT_COMPONENTS.test(relative) || TEST_OR_DEMO.test(relative) || /^(src\/)?pages\//.test(relative) || facts.isServer || facts.exports.length === 0) continue;
       const seen = new Set<string>();
       for (const each of facts.exports) {
         if (seen.has(each.exportName) || wrapping.has(`${file}#${each.exportName}`)) continue;
