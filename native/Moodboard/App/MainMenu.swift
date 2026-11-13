@@ -7,6 +7,7 @@ enum MainMenu {
 
     let app = NSMenu()
     app.addItem(withTitle: "About Moodboard", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+    app.addItem(withTitle: "Check for Updates…", action: #selector(AppDelegate.checkForUpdates(_:)), keyEquivalent: "")
     app.addItem(.separator())
     app.addItem(withTitle: "Hide Moodboard", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
     let others = app.addItem(withTitle: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
@@ -64,6 +65,7 @@ enum MainMenu {
 
     let help = NSMenu(title: "Help")
     help.addItem(withTitle: "Welcome to Moodboard", action: #selector(AppDelegate.showWelcome(_:)), keyEquivalent: "")
+    help.addItem(withTitle: "What's New in Moodboard", action: #selector(AppDelegate.showWhatsNew(_:)), keyEquivalent: "")
     help.addItem(withTitle: "Moodboard on GitHub", action: #selector(AppDelegate.openRepository(_:)), keyEquivalent: "")
     add(help, "Help", to: bar)
     NSApp.helpMenu = help
@@ -83,6 +85,8 @@ extension AppDelegate {
   @objc func importFromPaper(_ sender: Any?) { model?.chrome?.state.onPaper() }
   @objc func connectProject(_ sender: Any?) { model?.projects.choose() }
   @objc func showWelcome(_ sender: Any?) { model?.welcome.show() }
+  @objc func checkForUpdates(_ sender: Any?) { updater?.check(quietly: false) }
+  @objc func showWhatsNew(_ sender: Any?) { model?.whatsNew.show() }
   @objc func openRepository(_ sender: Any?) { NSWorkspace.shared.open(URL(string: "https://github.com/shariqmalik10/moodboard")!) }
   @objc func zoomInWall(_ sender: Any?) { zoom(by: 1) }
   @objc func zoomOutWall(_ sender: Any?) { zoom(by: -1) }

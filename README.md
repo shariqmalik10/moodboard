@@ -20,6 +20,8 @@ curl -fsSL https://raw.githubusercontent.com/shariqmalik10/moodboard/main/script
 
 You can also download `Moodboard.zip` from the [latest release](https://github.com/shariqmalik10/moodboard/releases/latest). The app isn't notarized, so macOS blocks a copy downloaded in a browser. Try to open it once, then click **Open Anyway** in **System Settings > Privacy & Security**.
 
+After that, Moodboard updates itself. It checks for a new release at launch and downloads it in the background, then asks you to relaunch. If you choose Later, the update installs when you quit. **Moodboard > Check for Updates…** checks right away. The first launch of a new version shows what changed, and **Help > What's New in Moodboard** shows it again.
+
 ### Build from source
 
 Building needs Xcode and Node 20.19 or newer, and works on Intel Macs too.
@@ -32,7 +34,7 @@ git clone https://github.com/shariqmalik10/moodboard.git
 cd moodboard && scripts/build.sh
 ```
 
-The script builds the web parts and the app, copies the app to `~/Applications`, and opens it. `scripts/build.sh --zip` writes `build/Moodboard.zip` instead, which is how a release is made.
+The script builds the web parts and the app, copies the app to `~/Applications`, and opens it. `scripts/build.sh --zip` writes an ad-hoc signed `build/Moodboard.zip` instead. To publish it, raise `MARKETING_VERSION` in `native/project.yml` and attach the zip to a GitHub release tagged with that version, such as `v0.2.0`. The app compares that tag with its own version to decide whether to update. The release's description is the What's New sheet, so write it in Markdown with `##` headings and `-` bullets. `scripts/build.sh --release` writes a release zip that is signed with a Developer ID certificate, notarized and stapled. It needs that certificate in the keychain and notary credentials saved with `xcrun notarytool store-credentials moodboard-notary`.
 
 ## First launch
 

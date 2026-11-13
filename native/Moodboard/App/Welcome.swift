@@ -46,7 +46,7 @@ final class WelcomeController {
   private unowned let app: AppModel
   private let state = WelcomeModel()
   private var panel: NSPanel?
-  private static let marker = Paths.support.appending(path: "welcomed")
+  static let marker = Paths.support.appending(path: "welcomed")
   static let demoFolder = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Moodboard Demo", directoryHint: .isDirectory)
 
   init(app: AppModel) {

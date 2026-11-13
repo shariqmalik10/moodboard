@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private var host = WebHost()
   private var server: SocketServer?
   private(set) var model: AppModel?
+  private(set) var updater: Updater?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     let window = NSWindow(
@@ -43,6 +44,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     server.start()
     self.server = server
+
+    let updater = Updater(window: window)
+    self.updater = updater
+    if !UserDefaults.standard.bool(forKey: "MoodboardRecording") { updater.check(quietly: true) }
   }
 
   func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
@@ -55,6 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     model?.handoffs.stopAll()
     model?.projects.stopAll()
     model?.saveState()
+    updater?.installIfReady()
   }
 }
 
@@ -112,6 +118,7 @@ final class AppModel {
   private(set) lazy var handoffs = Handoffs(app: self)
   private(set) lazy var projects = ProjectSync(app: self)
   private(set) lazy var welcome = WelcomeController(app: self)
+  private(set) lazy var whatsNew = WhatsNewController(window: window)
 
   init(host: WebHost, root: RootView, window: NSWindow) {
     self.host = host
@@ -163,6 +170,7 @@ final class AppModel {
       watch = PaperWatch(model: self)
       projects.startAll()
       welcome.showIfFirstLaunch()
+      whatsNew.showIfUpdated(isNewPerson: !FileManager.default.fileExists(atPath: WelcomeController.marker.path))
       for id in store.visibleIds where store.items[id]?.isComponent == true { plates.request(id) }
     } catch {
       showFailure(error.localizedDescription)
