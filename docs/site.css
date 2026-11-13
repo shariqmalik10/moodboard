@@ -82,7 +82,9 @@ html:not(.js) .hint { grid-area: 2 / 1; margin-top: var(--space-xs); }
 .labels { display: grid; }
 .labels span { grid-area: 1 / 1; transition: transform var(--dur-short) var(--ease-out), opacity var(--dur-short) var(--ease-out); }
 .labels span:not(:first-child) { display: none; }
-.js .labels span:not(:first-child) { display: block; opacity: 0; transform: translateY(100%); }
+/* Only the first label sizes the button; the script eases the width to each label as it takes over */
+.js .labels { position: relative; transition: width var(--dur-short) var(--ease-out); }
+.js .labels span:not(:first-child) { display: block; position: absolute; top: 0; left: 0; opacity: 0; transform: translateY(100%); }
 .js .download[data-step="1"] .labels span:nth-child(1), .js .download[data-step="2"] .labels span:nth-child(1), .js .download[data-step="2"] .labels span:nth-child(2) { opacity: 0; transform: translateY(-100%); }
 .download[data-step="1"] .labels span:nth-child(2), .download[data-step="2"] .labels span:nth-child(3) { opacity: 1; transform: none; }
 @keyframes drop {

@@ -163,16 +163,26 @@
   // The download starts from the link itself; the button only shows that it went, then says where to look.
   const download = document.querySelector(".download");
   const hint = document.querySelector(".hint");
+  const labels = download.querySelector(".labels");
+  // A width can't ease from auto, so it is pinned to the label in view before it moves to the next.
+  const fit = (step) => {
+    const current = labels.children[Number(download.dataset.step || 0)];
+    labels.style.width = `${current.getBoundingClientRect().width}px`;
+    labels.offsetWidth;
+    labels.style.width = `${labels.children[step].getBoundingClientRect().width}px`;
+  };
   let timers = [];
   download.addEventListener("click", () => {
     timers.forEach(clearTimeout);
     download.classList.remove("done");
     download.classList.add("going");
+    fit(1);
     download.dataset.step = "1";
     timers = [
       setTimeout(() => {
         download.classList.remove("going");
         download.classList.add("done");
+        fit(2);
         download.dataset.step = "2";
         hint.parentElement.classList.add("swap");
       }, 1800),
