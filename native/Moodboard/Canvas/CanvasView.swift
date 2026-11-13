@@ -21,10 +21,9 @@ final class CanvasView: NSView {
   private let world = WorldView()
 
   private(set) var camera: Camera
+  /// Where the camera is easing to. A flight keeps it on the camera.
   private var target: Camera
-  private var fling: CGVector = .zero
-  private var flight: (x: Spring, y: Spring, z: Spring)?
-  private var isWheel = false
+  private var motion = CameraMotion.easing(momentum: .zero, wheel: false)
   private var mounted: [Instance.Key: TileView] = [:]
   private var spare: [TileView] = []
   private var link: CADisplayLink?
@@ -38,9 +37,8 @@ final class CanvasView: NSView {
   var stats = FrameStats()
   private var keyboardKey: Instance.Key?
   private var arrangement: any Arrangement
-  private(set) var mode = ViewMode.wall
-  private var filter = ProjectFilter.all
-  private var refinement = Refinement()
+  private var view = ViewState()
+  var mode: ViewMode { view.mode }
   var density = GridLayout.Density(rawValue: UserDefaults.standard.integer(forKey: "gridDensity") + 1) ?? .medium {
     didSet { UserDefaults.standard.set(density.rawValue - 1, forKey: "gridDensity") }
   }
@@ -175,21 +173,29 @@ final class CanvasView: NSView {
   private func makeArrangement() -> any Arrangement {
     let height = { [store] (id: String) in store.items[id]?.height ?? 0 }
     switch mode {
-    case .wall: return Layout(columns: store.columns(for: filter), heightOf: height)
+    case .wall: return Layout(columns: store.columns(for: view.filter), heightOf: height)
     case .grid:
-      let sections = store.sections(for: filter) { [refinement, statusOf] item in refinement.matches(item, statusOf(item.id)) }
+      let sections = store.sections(for: view.filter) { [refinement = view.refinement, statusOf] item in refinement.matches(item, statusOf(item.id)) }
       return GridLayout(sections: sections, width: bounds.width, density: density, heightOf: height)
     case .list: return Layout(columns: [], heightOf: height)
     }
   }
 
-  /// Changes what's on the canvas. The tiles assemble again on a clock, the nearest ones first.
-  func show(_ nextMode: ViewMode, filter nextFilter: ProjectFilter) {
-    guard nextMode != mode || nextFilter != filter else { return }
-    if mode == .wall { wallCamera = camera }
-    let modeChanged = nextMode != mode
-    mode = nextMode
-    filter = nextFilter
+  /// Changes what's on the canvas. Another view or project assembles again on a clock, the nearest tiles first.
+  /// Another search or status narrows Grid: cards keep what they have, and the view goes back to the top.
+  func apply(_ next: ViewState) {
+    let before = view
+    guard next != before else { return }
+    view = next
+    guard next.mode == before.mode, next.filter == before.filter else { return rearrange(from: before.mode) }
+    guard mode == .grid else { return }
+    setCamera(Camera(x: 0, y: 0, z: 1))
+    boardChanged()
+  }
+
+  private func rearrange(from previous: ViewMode) {
+    if previous == .wall { wallCamera = camera }
+    let modeChanged = previous != mode
     clearKeyboardFocus()
     for (key, tile) in mounted { unmount(key, tile) }
     arrangement = makeArrangement()
@@ -202,15 +208,6 @@ final class CanvasView: NSView {
     isArriving = false
     busyTiles = true
     wake()
-  }
-
-  /// Narrows Grid by status or by name. Cards keep what they have, and the view goes back to the top.
-  func refine(_ next: Refinement) {
-    guard next != refinement else { return }
-    refinement = next
-    guard mode == .grid else { return }
-    setCamera(Camera(x: 0, y: 0, z: 1))
-    boardChanged()
   }
 
   /// A card's place in the loop moved, or a card joined or left what's being shown.
@@ -250,7 +247,7 @@ final class CanvasView: NSView {
     let isEmpty = mode == .grid && arrangement.headings.isEmpty
     emptyLabel.isHidden = !isEmpty
     if isEmpty {
-      emptyLabel.stringValue = refinement.isActive ? "Nothing here matches. Try another search or status." : "Nothing here yet."
+      emptyLabel.stringValue = view.refinement.isActive ? "Nothing here matches. Try another search or status." : "Nothing here yet."
       emptyLabel.sizeToFit()
       emptyLabel.frame.origin = CGPoint(x: (bounds.width - emptyLabel.frame.width) / 2, y: max(GridLayout.top + 40, (bounds.height - emptyLabel.frame.height) / 2))
     }
@@ -298,7 +295,7 @@ final class CanvasView: NSView {
     if stats.isRecording { stats.record(interval: interval, cost: CACurrentMediaTime() - began, step: distance) }
 
     busyTiles = tilesMoving
-    if !moved, !tilesMoving, target == camera, flight == nil, fling == .zero, !stats.isRecording {
+    if !moved, !tilesMoving, target == camera, motion.isResting, !stats.isRecording {
       link.isPaused = true
       lastTick = 0
       onSettle?()
@@ -306,21 +303,26 @@ final class CanvasView: NSView {
   }
 
   private func step(_ dt: Double) {
-    if var going = flight {
-      going.x.step(dt)
-      going.y.step(dt)
-      going.z.step(dt)
-      target = Camera(x: going.x.value, y: going.y.value, z: going.z.value)
+    var (momentum, wheel) = (CGVector.zero, false)
+    switch motion {
+    case .flying(var x, var y, var z):
+      x.step(dt)
+      y.step(dt)
+      z.step(dt)
+      target = Camera(x: x.value, y: y.value, z: z.value)
       camera = target
-      flight = going.x.isSettled && going.y.isSettled && going.z.isSettled ? nil : going
+      motion = x.isSettled && y.isSettled && z.isSettled ? .easing(momentum: .zero, wheel: false) : .flying(x: x, y: y, z: z)
       return
+    case .easing(let going, let isWheel):
+      (momentum, wheel) = (going, isWheel)
     }
-    if fling != .zero {
-      target.x += fling.dx * dt
-      target.y += fling.dy * dt
+    if momentum != .zero {
+      target.x += momentum.dx * dt
+      target.y += momentum.dy * dt
       let decay = pow(0.998, dt * 1000)
-      fling = CGVector(dx: fling.dx * decay, dy: fling.dy * decay)
-      if abs(fling.dx) < 4, abs(fling.dy) < 4 { fling = .zero }
+      momentum = CGVector(dx: momentum.dx * decay, dy: momentum.dy * decay)
+      if abs(momentum.dx) < 4, abs(momentum.dy) < 4 { momentum = .zero }
+      motion = .easing(momentum: momentum, wheel: wheel)
     }
     if let limits = arrangement.scrollLimits(viewHeight: bounds.height) {
       target.x = 0
@@ -329,9 +331,7 @@ final class CanvasView: NSView {
       let over = nearest - target.y
       target.y = abs(over) < 0.25 ? nearest : target.y + over * (1 - exp(-dt * (1 + abs(over) / 40) / 0.07))
     }
-    // A trackpad's own events already carry the system's momentum, so they get only enough smoothing
-    // to bridge the gaps between events and frames. A mouse wheel jumps in big steps and gets more.
-    let tau = isWheel ? 0.07 : 0.011
+    let tau = wheel ? 0.07 : 0.011
     let share = 1 - exp(-dt / tau)
     camera.x += (target.x - camera.x) * share
     camera.y += (target.y - camera.y) * share
@@ -405,7 +405,7 @@ final class CanvasView: NSView {
   }
 
   private func unmount(_ key: Instance.Key, _ tile: TileView) {
-    if let stage = tile.detach() { pool.release(stage) }
+    releaseStage(of: tile)
     mounted[key] = nil
     if hovered == key { hovered = nil }
     tile.isHidden = true
@@ -420,25 +420,35 @@ final class CanvasView: NSView {
     var moving = false
     let tiles = mounted.values
     var needing: [TileView] = []
-    let onHover = arrangement.runsOnHover
     for tile in tiles {
       // An open tile has the person's attention, so the wall behind it holds still.
       if tile.advance(dt, quiet: isLocked && !tile.isRaised) { moving = true }
       guard let item = tile.item, item.isComponent, !tile.isRaised else { continue }
-      if tile.stage != nil {
-        let keeps = onHover ? tile.key == hovered : tile.coverage.p >= Self.releaseBelow
-        if !keeps, let released = tile.detach() { pool.release(released) }
-      } else if onHover ? tile.key == hovered : tile.coverage.p > Self.warmAbove {
+      let running = tile.stage != nil
+      if running, !wantsStage(tile, running: true) {
+        releaseStage(of: tile)
+      } else if !running, wantsStage(tile, running: false) {
         needing.append(tile)
       }
     }
     guard let next = needing.max(by: { $0.coverage.p < $1.coverage.p }) else { return moving }
     // A tile fully in view outranks one still arriving, so what you're looking at runs first.
     if !provideStage(for: next), next.coverage.p >= TileView.liveAt, let weakest = weakestStage(below: next.coverage.p) {
-      if let released = weakest.detach() { pool.release(released) }
+      releaseStage(of: weakest)
       _ = provideStage(for: next)
     }
     return true
+  }
+
+  /// Whether a tile should be running. A running one keeps its stage down to less coverage than it takes to
+  /// start one, so a tile at the edge of the window doesn't start and stop as it moves.
+  private func wantsStage(_ tile: TileView, running: Bool) -> Bool {
+    if arrangement.runsOnHover { return tile.key == hovered }
+    return running ? tile.coverage.p >= Self.releaseBelow : tile.coverage.p > Self.warmAbove
+  }
+
+  private func releaseStage(of tile: TileView) {
+    if let stage = tile.detach() { pool.release(stage) }
   }
 
   private func provideStage(for tile: TileView) -> Bool {
@@ -464,7 +474,7 @@ final class CanvasView: NSView {
   func ensureStage(for tile: TileView) {
     guard tile.stage == nil, tile.item?.isComponent == true else { return }
     if provideStage(for: tile) { return }
-    if let weakest = weakestStage(below: 2), let released = weakest.detach() { pool.release(released) }
+    if let weakest = weakestStage(below: 2) { releaseStage(of: weakest) }
     _ = provideStage(for: tile)
   }
 
@@ -481,10 +491,12 @@ final class CanvasView: NSView {
     fly(to: next)
   }
 
-  func welcome(_ id: String) {
+  /// Adds a card where it can be seen forming. The insert's own board change mounts the card, so the canvas has
+  /// to know it's new before then.
+  func welcome(_ id: String, arriving insert: () -> Void) {
     newborn = id
     defer { newborn = nil }
-    boardChanged()
+    insert()
   }
 
   /// The repeat of a card nearest the middle of the window.
@@ -496,7 +508,9 @@ final class CanvasView: NSView {
     return arrangement.cards(in: viewRect(margin: arrangement.span)).filter { $0.id == id }.map(\.rect).min { distance($0) < distance($1) }
   }
 
-  var isFlying: Bool { flight != nil }
+  var isFlying: Bool {
+    if case .flying = motion { true } else { false }
+  }
 
   func worldHost() -> NSView { world }
 
@@ -517,9 +531,8 @@ final class CanvasView: NSView {
       zoom(at: point, factor: exp(event.scrollingDeltaY * 0.006))
       return
     }
-    flight = nil
-    fling = .zero
-    isWheel = !event.hasPreciseScrollingDeltas
+    let isWheel = !event.hasPreciseScrollingDeltas
+    motion = .easing(momentum: .zero, wheel: isWheel)
     let scale = isWheel ? 14.0 : 1.0
     target.x += event.scrollingDeltaX * scale
     target.y += event.scrollingDeltaY * scale
@@ -533,11 +546,10 @@ final class CanvasView: NSView {
 
   func zoom(at point: CGPoint, factor: Double) {
     guard arrangement.isEndless else { return }
-    flight = nil
+    motion = .easing(momentum: motion.momentum, wheel: false)
     let z = min(Self.maxZoom, max(Self.minZoom, target.z * factor))
     let k = z / target.z
     target = Camera(x: point.x - (point.x - target.x) * k, y: point.y - (point.y - target.y) * k, z: z)
-    isWheel = false
     wake()
   }
 
@@ -547,19 +559,18 @@ final class CanvasView: NSView {
 
   /// Glides somewhere with a spring that starts from wherever the camera is now.
   func fly(to next: Camera, response: Double = 0.55) {
-    fling = .zero
     var x = Spring(camera.x, response: response)
     var y = Spring(camera.y, response: response)
     var z = Spring(camera.z, response: response)
     x.target = next.x
     y.target = next.y
     z.target = next.z
-    if let going = flight {
-      x.velocity = going.x.velocity
-      y.velocity = going.y.velocity
-      z.velocity = going.z.velocity
+    if case .flying(let going, let goingY, let goingZ) = motion {
+      x.velocity = going.velocity
+      y.velocity = goingY.velocity
+      z.velocity = goingZ.velocity
     }
-    flight = (x, y, z)
+    motion = .flying(x: x, y: y, z: z)
     wake()
   }
 
@@ -595,8 +606,7 @@ final class CanvasView: NSView {
   }
 
   func panBy(dx: Double, dy: Double) {
-    flight = nil
-    isWheel = true
+    motion = .easing(momentum: motion.momentum, wheel: true)
     target.x += dx
     target.y += dy
     wake()
@@ -606,8 +616,7 @@ final class CanvasView: NSView {
     clearKeyboardFocus()
     guard !isLocked else { return }
     window?.makeFirstResponder(self)
-    flight = nil
-    fling = .zero
+    motion = .easing(momentum: .zero, wheel: false)
     target = camera
     let point = convert(event.locationInWindow, from: nil)
     let pressed = tile(at: point)
@@ -628,10 +637,10 @@ final class CanvasView: NSView {
     if going.moved {
       let dt = max(event.timestamp - going.lastTime, 0.001)
       let (dx, dy) = (point.x - going.last.x, point.y - going.last.y)
-      isWheel = false
       target.x += dx
       target.y += dy
-      fling = CGVector(dx: fling.dx * 0.6 + dx / dt * 0.4, dy: fling.dy * 0.6 + dy / dt * 0.4)
+      let fling = motion.momentum
+      motion = .easing(momentum: CGVector(dx: fling.dx * 0.6 + dx / dt * 0.4, dy: fling.dy * 0.6 + dy / dt * 0.4), wheel: false)
     }
     going.last = point
     going.lastTime = event.timestamp
@@ -646,11 +655,11 @@ final class CanvasView: NSView {
     busyTiles = true
     if going.moved {
       NSCursor.pop()
-      if event.timestamp - going.lastTime > 0.08 { fling = .zero }
+      if event.timestamp - going.lastTime > 0.08 { motion = .easing(momentum: .zero, wheel: false) }
       wake()
       return
     }
-    fling = .zero
+    motion = .easing(momentum: .zero, wheel: false)
     wake()
     if let key = going.pressed, let tile = mounted[key] { onOpen?(tile) }
   }
@@ -718,8 +727,7 @@ final class CanvasView: NSView {
   }
 
   func setCamera(_ next: Camera) {
-    flight = nil
-    fling = .zero
+    motion = .easing(momentum: .zero, wheel: false)
     camera = next
     target = next
     busyTiles = true
@@ -749,41 +757,18 @@ final class CanvasView: NSView {
   }
 }
 
-extension ComponentStatus {
-  /// The words under a card in Grid: its one mark, then whether it has a note.
-  static func attributed(_ status: ComponentStatus, in appearance: NSAppearance) -> NSAttributedString? {
-    let font = NSFont.systemFont(ofSize: 11, weight: .medium)
-    // A text layer doesn't draw in the view's appearance, so it needs the colour already worked out.
-    let fixed = { (color: NSColor) -> NSColor in
-      var resolved = color
-      appearance.performAsCurrentDrawingAppearance { resolved = NSColor(cgColor: color.cgColor) ?? color }
-      return resolved
-    }
-    let text = NSMutableAttributedString()
-    if status.hasNote {
-      text.append(NSAttributedString(string: status.mark == nil ? "Note" : "Note  ", attributes: [.font: font, .foregroundColor: fixed(.secondaryLabelColor)]))
-    }
-    if let mark = status.mark {
-      text.append(NSAttributedString(string: mark.label, attributes: [.font: font, .foregroundColor: fixed(mark.tone.color)]))
-    }
-    return text.length == 0 ? nil : text
-  }
-}
+/// How the camera is moving. It eases toward its target, or flies there on springs, never both.
+private enum CameraMotion {
+  /// Drifts on `momentum` a drag left behind. A trackpad's own events already carry the system's momentum, so they
+  /// get only enough smoothing to bridge the gaps between events and frames. A mouse wheel jumps in big steps and gets more.
+  case easing(momentum: CGVector, wheel: Bool)
+  case flying(x: Spring, y: Spring, z: Spring)
 
-extension ComponentStatus.Tone {
-  var color: NSColor {
-    switch self {
-    case .attention: .systemOrange
-    case .accent: .controlAccentColor
-    case .done: .systemGreen
-    }
+  var momentum: CGVector {
+    if case .easing(let momentum, _) = self { momentum } else { .zero }
   }
-}
 
-enum Palette {
-  static let wall = NSColor(name: nil) { appearance in
-    appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-      ? NSColor(srgbRed: 0.075, green: 0.082, blue: 0.09, alpha: 1)
-      : NSColor(srgbRed: 0.957, green: 0.961, blue: 0.945, alpha: 1)
+  var isResting: Bool {
+    if case .easing(.zero, _) = self { true } else { false }
   }
 }

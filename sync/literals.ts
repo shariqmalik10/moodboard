@@ -1,14 +1,20 @@
 import postcss from "postcss";
 import ts from "typescript";
-import type { Format, Literal } from "./types.ts";
+import type { Family, Format, Literal } from "./types.ts";
 
-const SPACING = new Set(["p", "px", "py", "pt", "pr", "pb", "pl", "ps", "pe", "m", "mx", "my", "mt", "mr", "mb", "ml", "ms", "me", "gap", "gap-x", "gap-y", "w", "h", "size", "min-w", "min-h", "max-w", "max-h", "top", "right", "bottom", "left", "inset", "inset-x", "inset-y", "space-x", "space-y", "translate-x", "translate-y"]);
-const LABELS: Record<string, string> = { p: "padding", px: "padding x", py: "padding y", pt: "padding top", pr: "padding right", pb: "padding bottom", pl: "padding left", ps: "padding start", pe: "padding end", m: "margin", mx: "margin x", my: "margin y", mt: "margin top", mr: "margin right", mb: "margin bottom", ml: "margin left", ms: "margin start", me: "margin end", gap: "gap", "gap-x": "gap x", "gap-y": "gap y", w: "width", h: "height", size: "size", "min-w": "min width", "min-h": "min height", "max-w": "max width", "max-h": "max height", top: "top", right: "right", bottom: "bottom", left: "left", inset: "inset", "inset-x": "inset x", "inset-y": "inset y", "space-x": "space x", "space-y": "space y", "translate-x": "move x", "translate-y": "move y", rounded: "radius", "rounded-t": "radius top", "rounded-b": "radius bottom", "rounded-l": "radius left", "rounded-r": "radius right", "rounded-tl": "radius top left", "rounded-tr": "radius top right", "rounded-bl": "radius bottom left", "rounded-br": "radius bottom right", text: "text size", leading: "line height", tracking: "tracking", opacity: "opacity", duration: "duration", delay: "delay", scale: "scale", rotate: "rotate", border: "border", "border-t": "border top", "border-b": "border bottom", "border-l": "border left", "border-r": "border right", blur: "blur", bg: "background", "text-color": "text colour", "border-color": "border colour" };
+/** Every Tailwind prefix a dial can read, by the scale its default values sit on, with the words the panel shows. */
+const SCALES: [Family, Record<string, string>][] = [
+  ["spacing", { p: "padding", px: "padding x", py: "padding y", pt: "padding top", pr: "padding right", pb: "padding bottom", pl: "padding left", ps: "padding start", pe: "padding end", m: "margin", mx: "margin x", my: "margin y", mt: "margin top", mr: "margin right", mb: "margin bottom", ml: "margin left", ms: "margin start", me: "margin end", gap: "gap", "gap-x": "gap x", "gap-y": "gap y", w: "width", h: "height", size: "size", "min-w": "min width", "min-h": "min height", "max-w": "max width", "max-h": "max height", top: "top", right: "right", bottom: "bottom", left: "left", inset: "inset", "inset-x": "inset x", "inset-y": "inset y", "space-x": "space x", "space-y": "space y", "translate-x": "move x", "translate-y": "move y" }],
+  ["radius", { rounded: "radius", "rounded-t": "radius top", "rounded-b": "radius bottom", "rounded-l": "radius left", "rounded-r": "radius right", "rounded-tl": "radius top left", "rounded-tr": "radius top right", "rounded-bl": "radius bottom left", "rounded-br": "radius bottom right" }],
+  ["text", { text: "text size" }],
+  ["plain", { opacity: "opacity", duration: "duration", delay: "delay", scale: "scale", rotate: "rotate" }],
+  ["arbitrary", { leading: "line height", tracking: "tracking", border: "border", "border-t": "border top", "border-b": "border bottom", "border-l": "border left", "border-r": "border right", blur: "blur" }],
+];
+const PREFIXES = new Map(SCALES.flatMap(([family, labels]) => Object.entries(labels).map(([prefix, label]) => [prefix, { family, label }] as const)));
+const COLOR_LABELS: Record<string, string> = { bg: "background", "text-color": "text colour", "border-color": "border colour" };
+const labelOf = (prefix: string) => PREFIXES.get(prefix)?.label ?? COLOR_LABELS[prefix] ?? prefix;
 const RADIUS: Record<string, number> = { none: 0, xs: 2, sm: 4, md: 6, lg: 8, xl: 12, "2xl": 16, "3xl": 24, "4xl": 32 };
 const TEXT: Record<string, number> = { xs: 12, sm: 14, base: 16, lg: 18, xl: 20, "2xl": 24, "3xl": 30, "4xl": 36, "5xl": 48, "6xl": 60, "7xl": 72 };
-const RADIUS_PREFIXES = new Set(["rounded", "rounded-t", "rounded-b", "rounded-l", "rounded-r", "rounded-tl", "rounded-tr", "rounded-bl", "rounded-br"]);
-const PLAIN = new Set(["opacity", "duration", "delay", "scale", "rotate"]);
-const ARBITRARY_ONLY = new Set(["leading", "tracking", "border", "border-t", "border-b", "border-l", "border-r", "blur"]);
 const COLOR_PREFIXES = new Set(["bg", "text", "border", "fill", "stroke", "ring", "outline", "shadow", "from", "to", "via"]);
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 const MOTION_ATTRIBUTES = new Set(["animate", "initial", "exit", "whileHover", "whileTap", "whileFocus", "whileInView", "transition", "style"]);
@@ -26,7 +32,7 @@ function rangeFor(prefix: string, value: number, unit: string): { min: number; m
   if (prefix === "scale") return { min: 0, max: Math.max(200, value * 2), step: 1 };
   if (prefix === "rotate") return { min: -180, max: 180, step: 1 };
   if (prefix === "text") return { min: 8, max: Math.max(96, value * 2), step: 1 };
-  if (RADIUS_PREFIXES.has(prefix)) return { min: 0, max: Math.max(64, value * 2), step: 1 };
+  if (PREFIXES.get(prefix)?.family === "radius") return { min: 0, max: Math.max(64, value * 2), step: 1 };
   if (prefix === "leading") return { min: 0, max: Math.max(80, value * 2), step: 1 };
   return { min: Math.min(0, value * 2), max: Math.max(96, value * 2), step: 1 };
 }
@@ -47,39 +53,41 @@ export function readToken(token: string): { variant: string; prefix: string; dia
     offset += 1;
   }
   const sign = negative ? -1 : 1;
+  // A signed value's edit starts at its minus, since the minus is part of what changes.
+  const signedStart = offset - (negative ? 1 : 0);
+  const number = (prefix: string, family: Family, value: number, unit: string, suffixStart: number) => ({
+    variant,
+    prefix,
+    dial: { kind: "number" as const, value, ...rangeFor(prefix, value, unit) },
+    format: { kind: "tailwind" as const, prefix, family, unit },
+    suffixStart,
+  });
+
   const arbitrary = rest.match(/^([a-z-]+?)-\[([^\]]+)\]$/);
   if (arbitrary) {
     const prefix = arbitrary[1] ?? "";
     const inner = arbitrary[2] ?? "";
     if (HEX.test(inner) && COLOR_PREFIXES.has(prefix)) return { variant, prefix: prefix === "text" ? "text-color" : prefix === "border" ? "border-color" : prefix, dial: { kind: "color", value: inner }, format: { kind: "tailwindColor", prefix }, suffixStart: offset };
-    const number = inner.match(NUMBER);
-    if (!number || !(SPACING.has(prefix) || RADIUS_PREFIXES.has(prefix) || PLAIN.has(prefix) || ARBITRARY_ONLY.has(prefix) || prefix === "text")) return null;
-    const value = Number(number[1]) * sign;
-    const unit = number[2] ?? "";
-    return { variant, prefix, dial: { kind: "number", value, ...rangeFor(prefix, value, unit) }, format: { kind: "tailwind", prefix, family: "arbitrary", unit, negative: false }, suffixStart: offset - (negative ? 1 : 0) };
+    const value = inner.match(NUMBER);
+    if (!value || !PREFIXES.has(prefix)) return null;
+    return number(prefix, "arbitrary", Number(value[1]) * sign, value[2] ?? "", signedStart);
   }
   const dash = rest.lastIndexOf("-");
   if (dash <= 0) return null;
   const prefix = rest.slice(0, dash);
   const name = rest.slice(dash + 1);
-  if (SPACING.has(prefix) && /^\d*\.?\d+$/.test(name)) {
-    const value = Number(name) * 4 * sign;
-    return { variant, prefix, dial: { kind: "number", value, ...rangeFor(prefix, value, "px") }, format: { kind: "tailwind", prefix, family: "spacing", unit: "px", negative: false }, suffixStart: offset - (negative ? 1 : 0) };
+  switch (PREFIXES.get(prefix)?.family) {
+    case "spacing":
+      return /^\d*\.?\d+$/.test(name) ? number(prefix, "spacing", Number(name) * 4 * sign, "px", signedStart) : null;
+    case "radius":
+      return name in RADIUS ? number(prefix, "radius", RADIUS[name] ?? 0, "px", offset) : null;
+    case "text":
+      return name in TEXT ? number(prefix, "text", TEXT[name] ?? 16, "px", offset) : null;
+    case "plain":
+      return /^\d+$/.test(name) ? number(prefix, "plain", Number(name) * sign, "", signedStart) : null;
+    default:
+      return null;
   }
-  if (RADIUS_PREFIXES.has(prefix) && name in RADIUS) {
-    const value = RADIUS[name] ?? 0;
-    return { variant, prefix, dial: { kind: "number", value, ...rangeFor(prefix, value, "px") }, format: { kind: "tailwind", prefix, family: "radius", unit: "px", negative: false }, suffixStart: offset };
-  }
-  if (prefix === "text" && name in TEXT) {
-    const value = TEXT[name] ?? 16;
-    return { variant, prefix, dial: { kind: "number", value, ...rangeFor(prefix, value, "px") }, format: { kind: "tailwind", prefix, family: "text", unit: "px", negative: false }, suffixStart: offset };
-  }
-  if (PLAIN.has(prefix) && /^\d+$/.test(name)) {
-    const value = Number(name) * sign;
-    return { variant, prefix, dial: { kind: "number", value, ...rangeFor(prefix, value, "") }, format: { kind: "tailwind", prefix, family: "plain", unit: "", negative: false }, suffixStart: offset - (negative ? 1 : 0) };
-  }
-  if (rest === "rounded") return { variant, prefix: "rounded", dial: { kind: "number", value: 4, ...rangeFor("rounded", 4, "px") }, format: { kind: "tailwind", prefix: "rounded", family: "radius", unit: "px", negative: false }, suffixStart: offset };
-  return null;
 }
 
 /** The source text a dial value becomes. Stays on the project's scale when the value is on it. */
@@ -238,7 +246,7 @@ export function readComponent(text: string, file: string, exportName: string): {
               // Only the part after a variant changes, so `md:p-4` keeps its `md:`.
               const start = inner + (match.index ?? 0) + read.suffixStart;
               const end = inner + (match.index ?? 0) + token.length;
-              const label = `${read.variant ? `${read.variant}: ` : ""}${LABELS[read.prefix] ?? read.prefix}`;
+              const label = `${read.variant ? `${read.variant}: ` : ""}${labelOf(read.prefix)}`;
               sink.add(group, label, { file, start, end, text: token.slice(read.suffixStart), dial: read.dial, format: read.format });
             }
           }

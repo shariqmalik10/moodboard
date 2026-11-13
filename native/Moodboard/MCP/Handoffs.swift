@@ -82,7 +82,6 @@ final class LineReader {
 final class Handoffs {
   private unowned let app: AppModel
   private var runs: [String: HandoffRun] = [:]
-  private var processes: [String: Process] = [:]
 
   private static let recentsKey = "recentRepositories"
   private var showedProjectRoot = false
@@ -101,21 +100,18 @@ final class Handoffs {
     set { UserDefaults.standard.set(newValue.prefix(6).map(\.path), forKey: Self.recentsKey) }
   }
 
-  func connect(_ inspector: InspectorModel) {
-    inspector.onSend = { [weak self, weak inspector] in
-      guard let inspector, let id = inspector.itemId, let repository = inspector.repository else { return }
-      self?.send(id: id, repository: repository)
-      inspector.run = self?.runs[id]
-    }
-    inspector.onStop = { [weak self, weak inspector] in
-      if let id = inspector?.itemId { self?.stop(id) }
-    }
-    inspector.onResume = { [weak self, weak inspector] in
-      if let id = inspector?.itemId { self?.resume(id) }
-    }
-    inspector.onSignIn = { [weak self] in self?.runInTerminal("claude auth login", named: "sign-in") }
-    inspector.onChooseRepository = { [weak self, weak inspector] in
-      if let inspector { self?.chooseRepository(for: inspector) }
+  func perform(_ action: HandoffAction, in inspector: InspectorModel) {
+    if case .signIn = action { return runInTerminal("claude auth login", named: "sign-in") }
+    if case .chooseRepository = action { return chooseRepository(for: inspector) }
+    guard let id = inspector.itemId else { return }
+    switch action {
+    case .send:
+      guard let repository = inspector.repository else { return }
+      send(id: id, repository: repository)
+      inspector.run = runs[id]
+    case .stop: stop(id)
+    case .resume: resume(id)
+    case .signIn, .chooseRepository: break
     }
   }
 
@@ -154,7 +150,8 @@ final class Handoffs {
   }
 
   func send(id: String, repository: URL) {
-    guard runs[id]?.isActive != true else { return }
+    // A finished run's process can linger a moment after its last line, and Stop has to keep reaching it.
+    guard runs[id]?.isOver != false else { return }
     let run = HandoffRun(repository: repository)
     runs[id] = run
     remember(repository)
@@ -193,13 +190,12 @@ final class Handoffs {
       let stopped = finished.terminationReason == .uncaughtSignal
       Task { @MainActor in
         // Its last line may still be in the pipe, and that line says how it ended.
-        for _ in 0..<10 where !run.hasEnded { try? await Task.sleep(for: .milliseconds(30)) }
+        for _ in 0..<10 where !run.hasReported { try? await Task.sleep(for: .milliseconds(30)) }
         reader.stop()
         errorReader.stop()
-        self?.processes[id] = nil
         run.ended(status: code, stoppedByPerson: stopped)
-        if run.didSucceed {
-          self?.app.statuses.markBuilt(id, repository: run.repository.path, summary: run.summary, session: run.sessionId)
+        if let summary = run.builtSummary {
+          self?.app.statuses.markBuilt(id, repository: run.repository.path, summary: summary, session: run.sessionId)
         }
       }
     }
@@ -209,13 +205,13 @@ final class Handoffs {
       run.fail("Couldn't start Claude Code. \(error.localizedDescription)")
       return
     }
-    processes[id] = process
+    run.started(process)
     try? input.fileHandleForWriting.write(contentsOf: Data(prompt.utf8))
     try? input.fileHandleForWriting.close()
   }
 
   func stop(_ id: String) {
-    processes[id]?.terminate()
+    runs[id]?.stop()
   }
 
   /// Picks the conversation up in Terminal through a `.command` file, which needs no automation permission.
@@ -242,6 +238,6 @@ final class Handoffs {
   }
 
   func stopAll() {
-    processes.values.forEach { $0.terminate() }
+    runs.values.forEach { $0.stop() }
   }
 }

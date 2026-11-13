@@ -2,13 +2,42 @@ import AppKit
 import SwiftUI
 import WebKit
 
+/// Everything a person can do from the panel.
+enum InspectorAction {
+  case close
+  case remove
+  case updateFromPaper
+  case startOver
+  case watch
+  case holdBefore(Bool)
+  case noteEdited(String)
+  case revert(DialChange)
+  case revertAll
+  case copyChanges
+  case copyBrief
+  case toggleBuilt
+  case dismissLost
+  case handoff(HandoffAction)
+}
+
+/// Sending a component to Claude Code, from the panel.
+enum HandoffAction {
+  case send
+  case stop
+  case resume
+  case signIn
+  case chooseRepository
+}
+
 @Observable
 final class InspectorModel {
   var itemId: String?
   var title = ""
   var isComponent = false
   var canUpdateFromPaper = false
-  /// Set for a component from a connected project, whose dials edit this file.
+  /// A component from a connected project, whose dials edit its source instead of a tune kept in the app.
+  var isProject = false
+  /// The files a project component's dials edit.
   var sourceFile: String?
   /// The list view keeps the dials showing, so there's nothing to close.
   var isPinned = false
@@ -25,24 +54,7 @@ final class InspectorModel {
   var repository: URL?
   var recentRepositories: [URL] = []
   var run: HandoffRun?
-  var onClose: () -> Void = {}
-  var onRemove: () -> Void = {}
-  var onUpdateFromPaper: () -> Void = {}
-  var onSend: () -> Void = {}
-  var onStop: () -> Void = {}
-  var onResume: () -> Void = {}
-  var onSignIn: () -> Void = {}
-  var onChooseRepository: () -> Void = {}
-  var onStartOver: () -> Void = {}
-  var onWatch: () -> Void = {}
-  var onHoldBefore: (Bool) -> Void = { _ in }
-  var onNoteEdited: (String) -> Void = { _ in }
-  var onRevert: (DialChange) -> Void = { _ in }
-  var onRevertAll: () -> Void = {}
-  var onCopyChanges: () -> Void = {}
-  var onCopyBrief: () -> Void = {}
-  var onToggleBuilt: () -> Void = {}
-  var onDismissLost: () -> Void = {}
+  var onAction: (InspectorAction) -> Void = { _ in }
 }
 
 /// The panel beside an open tile: DialKit in the middle, and the note and Send to Claude Code below it.
@@ -101,6 +113,7 @@ final class InspectorView: NSView {
     model.title = item.title
     model.isComponent = item.isComponent
     model.canUpdateFromPaper = ComponentLibrary.contains(item.id)
+    model.isProject = ProjectCatalog.contains(item.id)
     model.sourceFile = ProjectCatalog.row(item.id)?.file
     if item.isComponent {
       var components = URLComponents(url: SchemeHandler.root.appending(path: "panel.html"), resolvingAgainstBaseURL: false)
@@ -133,16 +146,16 @@ struct StageControls: View {
 
   var body: some View {
     HStack(spacing: 0) {
-      Button(action: model.onStartOver) {
+      Button { model.onAction(.startOver) } label: {
         Label("Start over", systemImage: "arrow.counterclockwise").padding(.horizontal, 12).frame(height: 32).contentShape(Rectangle())
       }
       .help("Put this component back to how it began")
-      Button(action: model.onWatch) {
+      Button { model.onAction(.watch) } label: {
         Label("Watch it play", systemImage: "play.fill").padding(.horizontal, 12).frame(height: 32).contentShape(Rectangle())
       }
       .help("Play the demo once. Moving your pointer over the component ends it.")
       // Comparing a project's component would mean writing to its file and back while the key is held.
-      if !model.changes.isEmpty, model.sourceFile == nil {
+      if !model.changes.isEmpty, !model.isProject {
         Divider().frame(height: 16)
         Label(model.showsBefore ? "Showing as designed" : "Hold to compare", systemImage: "circle.lefthalf.filled")
           .padding(.horizontal, 12)
@@ -151,13 +164,13 @@ struct StageControls: View {
           .foregroundStyle(model.showsBefore ? Color.accentColor : .primary)
           .gesture(
             DragGesture(minimumDistance: 0)
-              .onChanged { _ in if !model.showsBefore { model.onHoldBefore(true) } }
-              .onEnded { _ in model.onHoldBefore(false) }
+              .onChanged { _ in if !model.showsBefore { model.onAction(.holdBefore(true)) } }
+              .onEnded { _ in model.onAction(.holdBefore(false)) }
           )
           .help("Hold this, or hold the Option key, to see the component as it was designed")
           .accessibilityLabel("Compare with the design")
           .accessibilityAddTraits(.isButton)
-          .accessibilityAction { model.onHoldBefore(!model.showsBefore) }
+          .accessibilityAction { model.onAction(.holdBefore(!model.showsBefore)) }
       }
     }
     .buttonStyle(.plain)
@@ -178,15 +191,15 @@ private struct ChangesSection: View {
         Button { isOpen.toggle() } label: {
           HStack(spacing: 5) {
             Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).rotationEffect(.degrees(isOpen ? 90 : 0))
-            Text("\(model.changes.count) \(model.sourceFile == nil ? "tuned" : "changed")").font(.system(size: 12, weight: .semibold))
+            Text("\(model.changes.count) \(model.isProject ? "changed" : "tuned")").font(.system(size: 12, weight: .semibold))
           }
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isOpen ? "Hide what you tuned" : "Show what you tuned")
         Spacer()
-        Button("Copy", action: model.onCopyChanges).buttonStyle(.link).font(.system(size: 12)).help("Copy every change as text")
-        Button("Reset all", action: model.onRevertAll).buttonStyle(.link).font(.system(size: 12)).help(model.sourceFile == nil ? "Put every dial back to the design" : "Put every dial back to where it was, in the file too")
+        Button("Copy") { model.onAction(.copyChanges) }.buttonStyle(.link).font(.system(size: 12)).help("Copy every change as text")
+        Button("Reset all") { model.onAction(.revertAll) }.buttonStyle(.link).font(.system(size: 12)).help(model.isProject ? "Put every dial back to where it was, in the file too" : "Put every dial back to the design")
       }
       if isOpen {
         ScrollView {
@@ -198,7 +211,7 @@ private struct ChangesSection: View {
                 value(change.from).foregroundStyle(.secondary)
                 Image(systemName: "arrow.right").font(.system(size: 8, weight: .semibold)).foregroundStyle(.tertiary)
                 value(change.to)
-                Button { model.onRevert(change) } label: {
+                Button { model.onAction(.revert(change)) } label: {
                   Image(systemName: "arrow.uturn.backward").font(.system(size: 10, weight: .medium)).frame(width: 20, height: 20).contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -243,16 +256,16 @@ struct InspectorHeader: View {
         Spacer()
         Menu {
           if model.isComponent {
-            Button("Copy Brief for Claude Code", action: model.onCopyBrief)
-            if model.sourceFile == nil {
-              Button(model.status.build == .never ? "Mark as Built" : "Mark as Not Built", action: model.onToggleBuilt)
+            Button("Copy Brief for Claude Code") { model.onAction(.copyBrief) }
+            if !model.isProject {
+              Button(model.status.build == .never ? "Mark as Built" : "Mark as Not Built") { model.onAction(.toggleBuilt) }
             }
             Divider()
           }
           if model.canUpdateFromPaper {
-            Button("Update from Paper", action: model.onUpdateFromPaper)
+            Button("Update from Paper") { model.onAction(.updateFromPaper) }
           }
-          Button("Take off the wall", action: model.onRemove)
+          Button("Take off the wall") { model.onAction(.remove) }
         } label: {
           Image(systemName: "ellipsis").frame(width: 28, height: 28).contentShape(Rectangle())
         }
@@ -263,7 +276,7 @@ struct InspectorHeader: View {
         .accessibilityLabel("More")
 
         if !model.isPinned {
-          Button(action: model.onClose) {
+          Button { model.onAction(.close) } label: {
             Image(systemName: "xmark").font(.system(size: 12, weight: .semibold)).frame(width: 28, height: 28).contentShape(Rectangle())
           }
           .buttonStyle(.plain)
@@ -274,14 +287,14 @@ struct InspectorHeader: View {
       }
       if model.paper == .changed {
         notice("Paper has a newer version of this design.", tint: .orange) {
-          Button(model.isUpdating ? "Updating…" : "Update", action: model.onUpdateFromPaper).controlSize(.small).disabled(model.isUpdating)
+          Button(model.isUpdating ? "Updating…" : "Update") { model.onAction(.updateFromPaper) }.controlSize(.small).disabled(model.isUpdating)
         }
       } else if model.paper == .missing {
         notice("This frame is no longer in Paper. What you see here is the last version.", tint: .secondary) { EmptyView() }
       }
       if !model.lostTune.isEmpty {
         notice("Paper changed the value behind \(model.lostTune.joined(separator: ", ")), so that tune no longer applies.", tint: .orange) {
-          Button("OK", action: model.onDismissLost).controlSize(.small)
+          Button("OK") { model.onAction(.dismissLost) }.controlSize(.small)
         }
       }
     }
@@ -315,19 +328,19 @@ struct InspectorFooter: View {
           Divider().padding(.horizontal, -12)
         }
         if let run = model.run {
-          HandoffStatus(run: run, onResume: model.onResume, onSignIn: model.onSignIn)
+          HandoffStatus(run: run, onResume: { model.onAction(.handoff(.resume)) }, onSignIn: { model.onAction(.handoff(.signIn)) })
         } else if let line = model.builtLine {
           HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(line).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(2)
             Spacer(minLength: 0)
-            if model.resumableSession != nil { Button("Continue in Terminal", action: model.onResume).buttonStyle(.link).font(.system(size: 12)) }
+            if model.resumableSession != nil { Button("Continue in Terminal") { model.onAction(.handoff(.resume)) }.buttonStyle(.link).font(.system(size: 12)) }
           }
         }
         if let file = model.sourceFile {
           Text("Dials edit \(file)").font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head).help(file)
         }
         // Only the person's own typing goes through here. The app filling the field in must not save over a note.
-        TextField("Note for Claude Code…", text: Binding(get: { model.note }, set: { model.note = $0; model.onNoteEdited($0) }), axis: .vertical)
+        TextField("Note for Claude Code…", text: Binding(get: { model.note }, set: { model.note = $0; model.onAction(.noteEdited($0)) }), axis: .vertical)
           .textFieldStyle(.plain)
           .lineLimit(1...5)
           .font(.system(size: 13))
@@ -339,7 +352,7 @@ struct InspectorFooter: View {
               Button(url.lastPathComponent) { model.repository = url }
             }
             if !model.recentRepositories.isEmpty { Divider() }
-            Button("Choose a folder…", action: model.onChooseRepository)
+            Button("Choose a folder…") { model.onAction(.handoff(.chooseRepository)) }
           } label: {
             Label(model.repository?.lastPathComponent ?? "Choose a repository", systemImage: "folder")
               .font(.system(size: 12))
@@ -349,8 +362,8 @@ struct InspectorFooter: View {
           .fixedSize(horizontal: false, vertical: true)
           .accessibilityLabel("Repository")
           Spacer()
-          if model.run?.isActive == true {
-            Button(action: model.onStop) {
+          if model.run?.isWorking == true {
+            Button { model.onAction(.handoff(.stop)) } label: {
               Image(systemName: "stop.fill").font(.system(size: 10, weight: .bold)).frame(width: 24, height: 24)
             }
             .buttonStyle(.bordered)
@@ -359,14 +372,14 @@ struct InspectorFooter: View {
             .help("Stop Claude Code")
             .accessibilityLabel("Stop Claude Code")
           } else {
-            Button(action: model.onSend) {
+            Button { model.onAction(.handoff(.send)) } label: {
               Image(systemName: "arrow.up").font(.system(size: 12, weight: .bold)).frame(width: 24, height: 24)
             }
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.circle)
             .controlSize(.small)
             .keyboardShortcut(.return, modifiers: .command)
-            .disabled(model.repository == nil)
+            .disabled(model.repository == nil || model.run?.isOver == false)
             .help(model.repository == nil ? "Choose a repository first" : "Send to Claude Code, which can edit files in \(model.repository?.lastPathComponent ?? "this folder") (⌘Return)")
             .accessibilityLabel("Send to Claude Code")
           }
@@ -384,12 +397,12 @@ struct HandoffStatus: View {
 
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 6) {
-      if run.isActive { ProgressView().controlSize(.mini) }
+      if run.isWorking { ProgressView().controlSize(.mini) }
       Text(run.status).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(3)
       Spacer(minLength: 0)
       if run.needsSignIn {
         Button("Sign in", action: onSignIn).buttonStyle(.link).font(.system(size: 12))
-      } else if run.sessionId != nil, !run.isActive {
+      } else if run.sessionId != nil, !run.isWorking {
         Button("Continue in Terminal", action: onResume).buttonStyle(.link).font(.system(size: 12))
       }
     }
@@ -399,20 +412,68 @@ struct HandoffStatus: View {
 /// One request sent to Claude Code, as the inspector shows it.
 @Observable
 final class HandoffRun {
+  enum Phase {
+    case starting
+    case running(Process)
+    /// Claude Code said how it ended, and its process hasn't exited yet.
+    case reported(Outcome, Process)
+    case ended(Outcome)
+  }
+
+  enum Outcome {
+    /// The first line of what Claude Code said when it finished.
+    case built(summary: String)
+    case failed(needsSignIn: Bool)
+  }
+
   let repository: URL
+  private(set) var phase = Phase.starting
   private(set) var status = "Starting Claude Code…"
-  private(set) var isActive = true
   private(set) var sessionId: String?
   private(set) var changedFiles: Set<String> = []
-  private(set) var needsSignIn = false
-  private(set) var hasEnded = false
-  /// Claude Code said it finished, and this is the first line of what it said.
-  private(set) var didSucceed = false
-  private(set) var summary: String?
   private var lastError: String?
 
   init(repository: URL) {
     self.repository = repository
+  }
+
+  /// Claude Code is still at work, so the inspector offers Stop.
+  var isWorking: Bool {
+    switch phase {
+    case .starting, .running: true
+    case .reported, .ended: false
+    }
+  }
+
+  /// Its last line has arrived, or will never come.
+  var hasReported: Bool { !isWorking }
+
+  /// Nothing of this run is left, so another can start.
+  var isOver: Bool {
+    if case .ended = phase { true } else { false }
+  }
+
+  var needsSignIn: Bool {
+    switch phase {
+    case .reported(.failed(true), _), .ended(.failed(true)): true
+    default: false
+    }
+  }
+
+  var builtSummary: String? {
+    if case .ended(.built(let summary)) = phase { summary } else { nil }
+  }
+
+  func started(_ process: Process) {
+    guard case .starting = phase else { return }
+    phase = .running(process)
+  }
+
+  func stop() {
+    switch phase {
+    case .running(let process), .reported(_, let process): process.terminate()
+    case .starting, .ended: break
+    }
   }
 
   func apply(_ event: HandoffEvent) {
@@ -434,19 +495,23 @@ final class HandoffRun {
   }
 
   private func finish(_ text: String) {
-    didSucceed = true
-    summary = text
     let count = changedFiles.count
     status = count == 0 ? text : "\(count == 1 ? "1 file" : "\(count) files") changed. \(text)"
-    hasEnded = true
-    isActive = false
+    report(.built(summary: text))
   }
 
   func fail(_ reason: String) {
-    needsSignIn = reason.range(of: "authenticate|log ?in|sign ?in", options: [.regularExpression, .caseInsensitive]) != nil
+    let needsSignIn = reason.range(of: "authenticate|log ?in|sign ?in", options: [.regularExpression, .caseInsensitive]) != nil
     status = needsSignIn ? "Claude Code on this Mac needs you to sign in. After that, send again." : reason
-    hasEnded = true
-    isActive = false
+    report(.failed(needsSignIn: needsSignIn))
+  }
+
+  private func report(_ outcome: Outcome) {
+    switch phase {
+    case .starting: phase = .ended(outcome)
+    case .running(let process): phase = .reported(outcome, process)
+    case .reported, .ended: break
+    }
   }
 
   func noteError(_ line: String) {
@@ -455,14 +520,20 @@ final class HandoffRun {
 
   /// The process has gone. If it never said how it ended, this is the only news there is.
   func ended(status code: Int32, stoppedByPerson: Bool) {
-    isActive = false
-    guard !hasEnded else { return }
-    if stoppedByPerson {
-      fail("Stopped.")
-    } else if code == 127 {
-      fail("Couldn't find Claude Code. Is `claude` installed for this user?")
-    } else {
-      fail("Claude Code stopped. \(lastError ?? "It exited with code \(code).")")
+    switch phase {
+    case .reported(let outcome, _):
+      phase = .ended(outcome)
+    case .running:
+      if stoppedByPerson {
+        fail("Stopped.")
+      } else if code == 127 {
+        fail("Couldn't find Claude Code. Is `claude` installed for this user?")
+      } else {
+        fail("Claude Code stopped. \(lastError ?? "It exited with code \(code).")")
+      }
+      if case .reported(let outcome, _) = phase { phase = .ended(outcome) }
+    case .starting, .ended:
+      break
     }
   }
 }

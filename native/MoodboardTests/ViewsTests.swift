@@ -177,7 +177,7 @@ struct ProjectSyncTests {
   }
 
   @Test @MainActor func `sample props stay in the app and everything else goes to the source`() {
-    let (samples, source) = ProjectSync.split(["Sample props.title": "A", "article.radius": 18, "reset": true])
+    let (samples, source) = Dials.split(["Sample props.title": "A", "article.radius": 18, "reset": true])
     #expect(samples.keys.sorted() == ["Sample props.title"])
     #expect(source.keys.sorted() == ["article.radius"])
   }

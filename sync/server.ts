@@ -1,13 +1,15 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import react from "@vitejs/plugin-react";
-import { createServer, type Plugin } from "vite";
-import { applyEdits, dialConfig, formatValue, readComponent, readCss } from "./literals.ts";
+import { createServer, type Plugin, type ViteDevServer } from "vite";
+import { dialConfig, readComponent, readCss } from "./literals.ts";
+import { aliases, componentModule, globalsModule, googleFontsModule, type Places, SAMPLE_FOLDER, shims } from "./modules.ts";
 import { Samples } from "./samples.ts";
 import { Scanner } from "./scan.ts";
-import type { Change, Found, Literal, Sample } from "./types.ts";
+import type { Found, Literal, Sample } from "./types.ts";
+import { DialWriter } from "./writer.ts";
 
 const argument = (name: string) => {
   const at = process.argv.indexOf(`--${name}`);
@@ -19,10 +21,7 @@ const support = path.resolve(argument("support") ?? path.join(root, ".moodboard"
 const here = path.resolve(argument("assets") ?? path.join(import.meta.dirname, ".."));
 const token = argument("token") ?? process.env.MOODBOARD_TOKEN ?? randomBytes(16).toString("hex");
 const stage = path.join(here, "src/stage");
-const shims = path.join(stage, "shims");
-const client = path.join(here, "sync/client");
-/** The panel's folder for props the wall made up, named so nobody takes them for the real data. */
-const SAMPLE_FOLDER = "Sample props";
+const places: Places = { root, stage, client: path.join(here, "sync/client") };
 
 // A real component runs in a loop here, and the loop presses its buttons. Nothing it does may reach a real backend, leave the page, or open another.
 const PAGE_GUARD = `(() => {
@@ -67,13 +66,8 @@ function installedPackages(from: string): string[] {
 const scanner = new Scanner(root, argument("slug"));
 scanner.scan();
 const samples = new Samples(root, scanner.options, () => scanner.sourceFiles());
-let found: Found[] = [];
-const byId = () => new Map(found.map((each) => [each.id, each]));
-
-const sha = (text: string) => createHash("sha1").update(text).digest("hex");
-const writtenByUs = new Map<string, string>();
-const known = new Map<string, Map<string, string>>();
-const journal = new Map<string, Change[]>();
+let found = new Map<string, Found>();
+const componentFor = (url: URL) => found.get(url.searchParams.get("id") ?? "");
 
 function literalsOf(component: Found): Literal[] {
   const file = path.join(root, component.file);
@@ -87,11 +81,14 @@ function literalsOf(component: Found): Literal[] {
   return literals;
 }
 
-const sampleCache = new Map<string, { hash: string; props: Record<string, Sample>; dials: Record<string, unknown> }>();
+const writer = new DialWriter(root, literalsOf);
+
+type Made = { props: Record<string, Sample>; dials: Record<string, unknown> };
+const sampleCache = new Map<string, Made & { hash: string }>();
 function sampleOf(component: Found) {
   const cached = sampleCache.get(component.id);
   if (cached?.hash === component.hash) return cached;
-  let made: { props: Record<string, Sample>; dials: Record<string, unknown> } = { props: {}, dials: {} };
+  let made: Made = { props: {}, dials: {} };
   try {
     made = samples.forExport(path.join(root, component.file), component.exportName);
   } catch (reason) {
@@ -102,36 +99,35 @@ function sampleOf(component: Found) {
   return entry;
 }
 
-function publish(files: string[], bySelf: boolean) {
-  found = scanner.components();
-  const changed = new Set(found.filter((each) => sampleCache.has(each.id) && sampleCache.get(each.id)?.hash !== each.hash).map((each) => each.id));
+const COMPONENT_MODULE = "/@moodboard/component";
+const componentIdOf = (moduleId: string) => new URLSearchParams(moduleId.split("?")[1]).get("id") ?? "";
+
+/** Tells the app which components exist, and drops the cached modules of any whose source changed. */
+function publish(server: ViteDevServer, files: string[], bySelf: boolean) {
+  const next = scanner.components();
+  found = new Map(next.map((each) => [each.id, each]));
+  const changed = new Set(next.filter((each) => sampleCache.has(each.id) && sampleCache.get(each.id)?.hash !== each.hash).map((each) => each.id));
   for (const module of server.moduleGraph.idToModuleMap.values()) {
-    if (!module.id?.startsWith("/@moodboard/component")) continue;
-    if (changed.has(new URLSearchParams(module.id.split("?")[1]).get("id") ?? "")) server.moduleGraph.invalidateModule(module);
+    if (module.id?.startsWith(COMPONENT_MODULE) && changed.has(componentIdOf(module.id))) server.moduleGraph.invalidateModule(module);
   }
-  say({ type: "components", name: scanner.name, slug: scanner.slug, items: found, files: files.map((each) => path.relative(root, each)), bySelf });
+  say({ type: "components", name: scanner.name, slug: scanner.slug, items: next, files: files.map((each) => path.relative(root, each)), bySelf });
 }
 
-let pendingFiles = new Set<string>();
-let pendingTimer: NodeJS.Timeout | undefined;
-function fileChanged(file: string) {
-  scanner.fileChanged(file);
-  samples.touched(file);
-  pendingFiles.add(file);
-  clearTimeout(pendingTimer);
-  pendingTimer = setTimeout(() => {
-    const files = [...pendingFiles];
-    pendingFiles = new Set();
-    const bySelf = files.every((each) => {
-      if (!writtenByUs.has(each)) return false;
-      try {
-        return sha(fs.readFileSync(each, "utf8")) === writtenByUs.get(each);
-      } catch {
-        return false;
-      }
-    });
-    publish(files, bySelf);
-  }, 30);
+/** Gathers a burst of saves into one publish, and says whether every file in it was a write of our own. */
+function watchSaves(server: ViteDevServer) {
+  let pending = new Set<string>();
+  let timer: NodeJS.Timeout | undefined;
+  return (file: string) => {
+    scanner.fileChanged(file);
+    samples.touched(file);
+    pending.add(file);
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const files = [...pending];
+      pending = new Set();
+      publish(server, files, writer.wroteAll(files));
+    }, 30);
+  };
 }
 
 const json = (response: ServerResponse, value: unknown, status = 200) => {
@@ -148,242 +144,130 @@ const readBody = (request: IncomingMessage) =>
     request.on("error", reject);
   });
 
-const line = (text: string, at: number) => text.slice(0, at).split("\n").length;
+/** One address the server answers itself. `trusted` ones answer only the app, which sends the token. */
+type Route = { trusted?: boolean; method?: string; answer: (url: URL, request: IncomingMessage, response: ServerResponse) => unknown };
 
-/** Writes dial values into the source. Reads the file fresh each time, and leaves a literal alone if it no longer says what the panel was shown. */
-function write(id: string, values: Record<string, unknown>) {
-  const component = byId().get(id);
-  if (!component) return { changes: [] as Change[], conflicts: Object.keys(values) };
-  const literals = new Map(literalsOf(component).map((each) => [each.path, each]));
-  const seen = (known.get(id) ?? new Map<string, string>());
-  known.set(id, seen);
-  const perFile = new Map<string, { literal: Literal; next: string; value: unknown }[]>();
-  const conflicts: string[] = [];
-  for (const [dial, value] of Object.entries(values)) {
-    const literal = literals.get(dial);
-    if (!literal) {
-      conflicts.push(dial);
-      continue;
-    }
-    if (seen.has(dial) && seen.get(dial) !== literal.text) {
-      conflicts.push(dial);
-      continue;
-    }
-    if (literal.dial.value === value) continue;
-    const next = formatValue(literal.format, value as number | string);
-    if (next === literal.text) continue;
-    const edits = perFile.get(literal.file) ?? [];
-    edits.push({ literal, next, value });
-    perFile.set(literal.file, edits);
-  }
-  const changes: Change[] = [];
-  for (const [file, edits] of perFile) {
-    const text = fs.readFileSync(file, "utf8");
-    if (edits.some(({ literal }) => text.slice(literal.start, literal.end) !== literal.text)) {
-      conflicts.push(...edits.map((each) => each.literal.path));
-      continue;
-    }
-    const after = applyEdits(text, edits.map(({ literal, next }) => ({ start: literal.start, end: literal.end, next })));
-    writtenByUs.set(file, sha(after));
-    const temporary = `${file}.moodboard-${process.pid}`;
-    fs.writeFileSync(temporary, after, { mode: fs.statSync(file).mode });
-    fs.renameSync(temporary, file);
-    for (const { literal, next, value } of edits) {
-      seen.set(literal.path, next);
-      changes.push({ path: literal.path, file: path.relative(root, file), line: line(after, literal.start), from: literal.text, to: next, fromValue: literal.dial.value, toValue: value as number | string });
-    }
-  }
-  if (changes.length > 0) journal.set(id, mergeJournal(journal.get(id) ?? [], changes));
-  return { changes, conflicts };
+function routes(server: ViteDevServer): Record<string, Route> {
+  return {
+    "/stage.html": {
+      async answer(_url, request, response) {
+        const page = `<!doctype html><html lang="en" data-project><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Stage</title><script>${PAGE_GUARD}window.process = { env: ${JSON.stringify(publicEnv())} };</script></head><body><div id="stage"></div><script type="module" src="/@fs${encodeURI(path.join(stage, "main.tsx"))}"></script></body></html>`;
+        response.setHeader("Content-Type", "text/html");
+        response.end(await server.transformIndexHtml(request.url ?? "/stage.html", page));
+      },
+    },
+    "/__moodboard/component": {
+      answer(url, _request, response) {
+        const component = componentFor(url);
+        if (!component) return json(response, null, 404);
+        return json(response, { id: component.id, title: component.title, project: scanner.slug, folder: SAMPLE_FOLDER, props: sampleOf(component).dials });
+      },
+    },
+    "/api/dials": {
+      // Named the way the app names its saved dials in Application Support.
+      answer(url, _request, response) {
+        const name = encodeURIComponent(url.searchParams.get("id") ?? "").replace(/[^A-Za-z0-9%_-]/g, (each) => `%${each.charCodeAt(0).toString(16).toUpperCase()}`);
+        const saved = path.join(support, "dials", `${name}.json`);
+        response.setHeader("Content-Type", "application/json");
+        response.end(fs.existsSync(saved) ? fs.readFileSync(saved) : "null");
+      },
+    },
+    "/__moodboard/dials": {
+      trusted: true,
+      answer(url, _request, response) {
+        const component = componentFor(url);
+        if (!component) return json(response, null, 404);
+        const literals = literalsOf(component);
+        writer.show(component, literals);
+        const props = sampleOf(component).dials;
+        return json(response, {
+          id: component.id,
+          title: component.title,
+          file: component.file,
+          exportName: component.exportName,
+          root,
+          project: scanner.slug,
+          kind: "project",
+          config: { ...(Object.keys(props).length > 0 ? { [SAMPLE_FOLDER]: props } : {}), ...dialConfig(literals) },
+          values: Object.fromEntries(literals.map((each) => [each.path, each.dial.value])),
+          files: [...new Set([component.file, ...literals.map((each) => path.relative(root, each.file))])],
+          journal: writer.journalNow(component),
+        });
+      },
+    },
+    "/__moodboard/write": {
+      trusted: true,
+      method: "POST",
+      async answer(_url, request, response) {
+        const body = JSON.parse(await readBody(request)) as { id: string; values: Record<string, unknown> };
+        const component = found.get(body.id);
+        const result = writer.write(component, body.values);
+        return json(response, { ...result, journal: component ? writer.journalNow(component) : [] });
+      },
+    },
+  };
 }
 
-/** Keeps where each dial began. A dial moved back to its start drops out of the journal. */
-function mergeJournal(journalled: Change[], changes: Change[]) {
-  const out = new Map(journalled.map((each) => [each.path, each]));
-  for (const change of changes) {
-    const first = out.get(change.path);
-    if (first && first.from === change.to) out.delete(change.path);
-    else out.set(change.path, first ? { ...change, from: first.from, fromValue: first.fromValue } : change);
-  }
-  return [...out.values()];
-}
-
-/** What this session's dials have written and the file still says. An edit elsewhere can take a change back. */
-function journalNow(component: Found) {
-  const literals = new Map(literalsOf(component).map((each) => [each.path, each.text]));
-  const kept = (journal.get(component.id) ?? []).filter((each) => literals.get(each.path) === each.to);
-  journal.set(component.id, kept);
-  return kept;
-}
-
-const asModulePath = (file: string) => JSON.stringify(file);
-
-function componentModule(component: Found) {
-  const file = asModulePath(path.join(root, component.file));
-  const providers = scanner.layout.providers.filter((each) => !(each.module === path.join(root, component.file) && each.exportName === component.exportName));
-  const providerImports = providers.map((each, at) => (each.exportName === "default" ? `import Provider${at} from ${asModulePath(each.module)};` : `import { ${each.exportName} as Provider${at} } from ${asModulePath(each.module)};`));
-  const wrap = (inner: string) => providers.reduceRight((body, each, at) => `createElement(Provider${at}, { ${Object.entries(each.attributes).map(([key, value]) => `${JSON.stringify(key)}: ${value}`).join(", ")} }, ${body})`, inner);
-  if (component.sidecar) {
-    return `
-import { createElement } from "react";
-import Target from ${asModulePath(path.join(root, component.sidecar))};
-${providerImports.join("\n")}
-export default function Demo() {
-  return ${wrap("createElement(Target)")};
-}`;
-  }
-  const target = component.exportName === "default" ? `import Target from ${file};` : `import { ${component.exportName} as Target } from ${file};`;
-  return `
-import { createElement } from "react";
-import { useTuned } from ${asModulePath(path.join(stage, "tuned.ts"))};
-${target}
-${providerImports.join("\n")}
-const revive = (value) => {
-  if (Array.isArray(value)) return value.map(revive);
-  if (value && typeof value === "object") {
-    if (value.__fn) return () => {};
-    if (value.__date) return new Date(value.__date);
-    return Object.fromEntries(Object.entries(value).map(([key, each]) => [key, revive(each)]));
-  }
-  return value;
-};
-const sample = revive(${JSON.stringify(sampleOf(component).props)});
-export default function Demo() {
-  const tuned = useTuned();
-  return ${wrap(`createElement(Target, { ...sample, ...(tuned?.[${JSON.stringify(SAMPLE_FOLDER)}] ?? {}) })`)};
-}`;
-}
-
-function globalsModule() {
-  const { css, bodyClass, fonts } = scanner.layout;
-  const lines = [...css.map((each) => `import ${JSON.stringify(each)};`)];
-  lines.push(`import { applyFont } from ${asModulePath(path.join(client, "font.ts"))};`);
-  for (const font of fonts) lines.push(`applyFont(${JSON.stringify(font.family)}, ${JSON.stringify(font.source)}, ${font.options.includes("src:") ? "{}" : font.options});`);
-  lines.push(`document.body.className = ${JSON.stringify(bodyClass)};`);
-  return lines.join("\n");
-}
-
-const SHIMS: Record<string, string> = {
-  "next/link": path.join(shims, "link.tsx"),
-  "next/navigation": path.join(shims, "navigation.ts"),
-  "next/image": path.join(client, "image.tsx"),
-  "next/dynamic": path.join(client, "dynamic.tsx"),
-  "next/head": path.join(client, "nothing.tsx"),
-  "next/script": path.join(client, "nothing.tsx"),
-  "next/headers": path.join(client, "nothing.tsx"),
-  "next/cache": path.join(client, "nothing.tsx"),
-  "server-only": path.join(client, "nothing.tsx"),
-  "client-only": path.join(client, "nothing.tsx"),
-  "next/font/local": path.join(client, "font-local.ts"),
-};
-
-function aliases(): { from: RegExp; to: string }[] {
-  const out: { from: RegExp; to: string }[] = [];
-  const base = scanner.options.baseUrl ?? root;
-  for (const [pattern, targets] of Object.entries(scanner.options.paths ?? {})) {
-    const target = targets[0];
-    if (!target) continue;
-    const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace("*", "(.*)");
-    out.push({ from: new RegExp(`^${escaped}$`), to: path.resolve(base, target).replace("*", "$1") });
-  }
-  return out;
+/** The wall's cursor pictures, from the app's own public folder. */
+function cursor(url: URL, response: ServerResponse) {
+  const folder = path.join(here, "public");
+  const file = path.join(folder, path.normalize(url.pathname));
+  if (!url.pathname.startsWith("/cursors/") || !file.startsWith(folder) || !fs.existsSync(file)) return false;
+  response.setHeader("Content-Type", "image/svg+xml");
+  response.end(fs.readFileSync(file));
+  return true;
 }
 
 function moodboard(): Plugin {
   const GOOGLE = "\0moodboard:google-fonts";
   const GLOBALS = "\0moodboard:globals";
   const NO_MOTION = "\0moodboard:no-motion";
-  const paths = aliases();
+  const replacements = shims(places);
+  const paths = aliases(scanner, root);
   return {
     name: "moodboard",
     enforce: "pre",
     resolveId(source, importer, options) {
-      const shim = SHIMS[source];
+      const shim = replacements[source];
       if (shim) return shim;
       if (source === "next/font/google") return GOOGLE;
       if (source === "virtual:moodboard/globals") return GLOBALS;
       if (source === "motion" && importer?.endsWith("demos/tune.ts")) return NO_MOTION;
-      if (source.endsWith("demos/resolve") && importer?.startsWith(stage)) return path.join(client, "resolve.ts");
-      if (source.startsWith("/@moodboard/component")) return source;
+      if (source.endsWith("demos/resolve") && importer?.startsWith(stage)) return path.join(places.client, "resolve.ts");
+      if (source.startsWith(COMPONENT_MODULE)) return source;
       for (const { from, to } of paths) {
         if (from.test(source)) return this.resolve(source.replace(from, to), importer, { ...options, skipSelf: true });
       }
       return null;
     },
     load(id) {
-      if (id === GOOGLE) return [`import { googleFont } from ${asModulePath(path.join(client, "font.ts"))};`, ...[...scanner.googleFonts].map((name) => `export const ${name} = googleFont(${JSON.stringify(name)});`)].join("\n");
-      if (id === GLOBALS) return globalsModule();
+      if (id === GOOGLE) return googleFontsModule(scanner, places);
+      if (id === GLOBALS) return globalsModule(scanner, places);
       if (id === NO_MOTION) return "export const spring = () => { throw new Error('Springs are for the panel'); };";
-      if (id.startsWith("/@moodboard/component")) {
-        const component = byId().get(new URLSearchParams(id.split("?")[1]).get("id") ?? "");
-        return component ? componentModule(component) : "export default function Missing() { return null; }";
+      if (id.startsWith(COMPONENT_MODULE)) {
+        const component = found.get(componentIdOf(id));
+        return component ? componentModule(component, scanner, places, sampleOf(component).props) : "export default function Missing() { return null; }";
       }
       return null;
     },
     configureServer(server) {
+      const table = routes(server);
       server.middlewares.use(async (request, response, next) => {
         const url = new URL(request.url ?? "/", "http://local");
-        const trusted = request.headers["x-moodboard"] === token;
-        if (url.pathname === "/stage.html") {
-          const page = `<!doctype html><html lang="en" data-project><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Stage</title><script>${PAGE_GUARD}window.process = { env: ${JSON.stringify(publicEnv())} };</script></head><body><div id="stage"></div><script type="module" src="/@fs${encodeURI(path.join(stage, "main.tsx"))}"></script></body></html>`;
-          response.setHeader("Content-Type", "text/html");
-          response.end(await server.transformIndexHtml(request.url ?? "/stage.html", page));
+        const route = table[url.pathname];
+        if (route && (!route.method || route.method === request.method)) {
+          if (route.trusted && request.headers["x-moodboard"] !== token) return json(response, { error: "No." }, 403);
+          await route.answer(url, request, response);
           return;
         }
-        if (url.pathname === "/__moodboard/component") {
-          const component = byId().get(url.searchParams.get("id") ?? "");
-          if (!component) return json(response, null, 404);
-          const sample = sampleOf(component);
-          return json(response, { id: component.id, title: component.title, project: scanner.slug, folder: SAMPLE_FOLDER, props: sample.dials });
-        }
-        if (url.pathname === "/api/dials") {
-          const saved = path.join(support, "dials", `${encodeURIComponent(url.searchParams.get("id") ?? "").replace(/[^A-Za-z0-9%_-]/g, (each) => `%${each.charCodeAt(0).toString(16).toUpperCase()}`)}.json`);
-          response.setHeader("Content-Type", "application/json");
-          response.end(fs.existsSync(saved) ? fs.readFileSync(saved) : "null");
-          return;
-        }
-        if (url.pathname.startsWith("/cursors/")) {
-          const file = path.join(here, "public", path.normalize(url.pathname));
-          if (file.startsWith(path.join(here, "public")) && fs.existsSync(file)) {
-            response.setHeader("Content-Type", "image/svg+xml");
-            response.end(fs.readFileSync(file));
-            return;
-          }
-        }
-        if (url.pathname === "/__moodboard/dials") {
-          if (!trusted) return json(response, { error: "No." }, 403);
-          const component = byId().get(url.searchParams.get("id") ?? "");
-          if (!component) return json(response, null, 404);
-          const literals = literalsOf(component);
-          known.set(component.id, new Map(literals.map((each) => [each.path, each.text])));
-          const props = sampleOf(component).dials;
-          return json(response, {
-            id: component.id,
-            title: component.title,
-            file: component.file,
-            exportName: component.exportName,
-            root,
-            project: scanner.slug,
-            kind: "project",
-            config: { ...(Object.keys(props).length > 0 ? { [SAMPLE_FOLDER]: props } : {}), ...dialConfig(literals) },
-            values: Object.fromEntries(literals.map((each) => [each.path, each.dial.value])),
-            files: [...new Set([component.file, ...literals.map((each) => path.relative(root, each.file))])],
-            journal: journalNow(component),
-          });
-        }
-        if (url.pathname === "/__moodboard/write" && request.method === "POST") {
-          if (!trusted) return json(response, { error: "No." }, 403);
-          const body = JSON.parse(await readBody(request)) as { id: string; values: Record<string, unknown> };
-          const result = write(body.id, body.values);
-          const component = byId().get(body.id);
-          return json(response, { ...result, journal: component ? journalNow(component) : [] });
-        }
+        if (cursor(url, response)) return;
         next();
       });
+      const saved = watchSaves(server);
       const changed = (file: string) => {
         const relative = path.relative(root, file);
         if (relative.startsWith("..") || /(^|\/)(\.git|\.next|node_modules|out)\//.test(relative) || file.includes(".moodboard-")) return;
-        fileChanged(file);
+        saved(file);
       };
       server.watcher.on("change", changed);
       server.watcher.on("add", changed);
@@ -432,8 +316,8 @@ say({ type: "listening", port, name: scanner.name, slug: scanner.slug, root });
 
 // Building the type checker's view takes a moment, and everything after this is quick.
 setTimeout(() => {
-  samples.forExport("", "");
-  publish([], false);
+  samples.warm();
+  publish(server, [], false);
 }, 0);
 
 process.stdin.on("end", () => process.exit(0));

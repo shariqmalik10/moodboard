@@ -117,6 +117,8 @@ final class AppModel {
   private(set) lazy var tools = Tools(model: self)
   private(set) lazy var handoffs = Handoffs(app: self)
   private(set) lazy var projects = ProjectSync(app: self)
+  private(set) lazy var connector = ProjectConnector(app: self)
+  private(set) lazy var dials = Dials(app: self)
   private(set) lazy var welcome = WelcomeController(app: self)
   private(set) lazy var whatsNew = WhatsNewController(window: window)
 
@@ -127,7 +129,7 @@ final class AppModel {
     runtime = Runtime(host: host, backstage: root.backstage)
     pool = LivePool(host: host, backstage: root.backstage)
     host.bridge.onMessage = { [weak self] web, message in self?.receive(web, message) }
-    host.scheme.projectRecord = { [weak self] id in await self?.projects.record(id) }
+    host.scheme.projectRecord = { [weak self] id in await self?.dials.record(id) }
   }
 
   func start() async {
@@ -182,7 +184,7 @@ final class AppModel {
     list?.refresh()
     chrome?.boardChanged()
     // The last thing in the chosen project went away, so there's nothing left to choose.
-    if let chrome, case .project(let project) = chrome.state.filter, !chrome.state.projects.contains(project) {
+    if let chrome, case .project(let project) = chrome.state.view.filter, !chrome.state.projects.contains(project) {
       show(filter: .all)
     }
   }
@@ -196,22 +198,20 @@ final class AppModel {
 
   /// Narrows Grid and List. The Wall keeps showing everything.
   func refine(_ next: Refinement) {
-    guard let chrome else { return }
-    chrome.state.refinement = next
-    canvas?.refine(next)
-    list?.refine(next)
-    chrome.boardChanged()
+    guard var view = chrome?.state.view else { return }
+    view.refinement = next
+    apply(view)
   }
 
   /// Takes the keyboard to the search field. The Wall has no search, so this moves to Grid.
   func startSearch() {
-    if chrome?.state.mode == .wall { show(.grid) }
+    if chrome?.state.view.mode == .wall { show(.grid) }
     chrome?.state.searchFocus += 1
   }
 
   /// Return in the search field: use the first thing it found.
   func useFirstResult() {
-    if chrome?.state.mode == .list {
+    if chrome?.state.view.mode == .list {
       list?.focusRows()
     } else if let tile = canvas?.firstCard {
       focus?.open(tile)
@@ -219,29 +219,30 @@ final class AppModel {
   }
 
   /// Switches the view, the project, or both. An open tile flies home first.
-  func show(_ nextMode: ViewMode? = nil, filter nextFilter: ProjectFilter? = nil) {
-    guard let chrome, let canvas, let list, let focus else { return }
-    let mode = nextMode ?? chrome.state.mode
-    var filter = nextFilter ?? chrome.state.filter
-    if mode == .list, filter == .project("material") { filter = .all }
+  func show(_ mode: ViewMode? = nil, filter: ProjectFilter? = nil) {
+    guard let canvas, let focus, var view = chrome?.state.view else { return }
+    if let mode { view.mode = mode }
+    if let filter { view.filter = filter }
     if focus.tile != nil {
-      focus.close()
       Task {
-        while focus.tile != nil { try? await Task.sleep(for: .milliseconds(30)) }
-        show(mode, filter: filter)
+        await focus.closeAndWait()
+        show(view.mode, filter: view.filter)
       }
       return
     }
-    let wasList = chrome.state.mode == .list
-    chrome.state.mode = mode
-    chrome.state.filter = filter
-    if wasList, mode != .list { list.leave() }
-    canvas.show(mode, filter: filter)
-    if mode == .list {
-      if wasList { list.setFilter(filter) } else { list.enter(filter, refinement: chrome.state.refinement) }
-    } else {
-      window.makeFirstResponder(canvas)
-    }
+    apply(view)
+    if view.mode != .list { window.makeFirstResponder(canvas) }
+  }
+
+  /// Hands the canvas, the list and the bar the same view state.
+  private func apply(_ next: ViewState) {
+    guard let chrome, let canvas, let list else { return }
+    var next = next
+    // List shows only components, so it has no Materials project.
+    if next.mode == .list, next.filter == .project("material") { next.filter = .all }
+    chrome.state.view = next
+    canvas.apply(next)
+    list.apply(next)
     chrome.boardChanged()
   }
 
@@ -252,31 +253,22 @@ final class AppModel {
     alert.runModal()
   }
 
-  private func receive(_ web: WKWebView?, _ message: JSON) {
-    if message["type"] as? String == "runtime-ready" {
+  private func receive(_ web: WKWebView?, _ message: PageMessage) {
+    if case .runtimeReady = message {
       runtime.markReady()
       return
     }
-    if projects.owns(web) {
-      projects.handle(web, message: message)
-      return
-    }
-    if plates?.owns(web) == true {
-      plates?.handle(web, message: message)
-      return
-    }
-    if message["type"] as? String == "runtime-ready" { return }
-    switch message["type"] as? String {
-    case "dials":
-      if let id = message["id"] as? String { focus?.tuned(id: id, state: message["state"], byPerson: message["byPerson"] as? Bool ?? false) }
-    case "escape":
+    switch message {
+    case .dials(let id, let state, let byPerson):
+      focus?.tuned(id: id, state: state, byPerson: byPerson)
+    case .escape:
       focus?.close()
-    case "ready":
+    case .ready:
       pool.stage(of: web)?.markReady()
       canvas?.wake()
-    case "failed":
-      pool.stage(of: web)?.markFailed(message["message"] as? String ?? "It didn't load.")
-    default:
+    case .failed(_, let reason):
+      pool.stage(of: web)?.markFailed(reason)
+    case .runtimeReady, .measured, .driving:
       break
     }
   }
@@ -286,7 +278,7 @@ final class AppModel {
   /// A dropped folder is a project to connect. Anything else is a picture or a film for the wall.
   func addMaterials(_ urls: [URL], at point: CGPoint?) {
     let folders = urls.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
-    folders.forEach(projects.connectAsked)
+    folders.forEach(connector.connectAsked)
     Task {
       for url in urls where !folders.contains(url) {
         do {
@@ -304,13 +296,8 @@ final class AppModel {
     // Something new arrives on the wall, where it can be seen coming together.
     show(.wall, filter: .all)
     let slot = canvas.slotNearCenter(point)
-    store.onChange = nil
-    store.insert(id: id, material: material, column: slot.column, index: slot.index)
-    store.onChange = { [weak self] in self?.boardChanged() }
-    list?.refresh()
-    chrome?.boardChanged()
+    canvas.welcome(id) { store.insert(id: id, material: material, column: slot.column, index: slot.index) }
     plates?.request(id, first: true)
-    canvas.welcome(id)
     if let home = canvas.homeRect(for: id) { canvas.bringIntoView(home) }
   }
 

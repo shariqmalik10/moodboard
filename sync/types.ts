@@ -29,8 +29,11 @@ export type Literal = {
 export type NumberDial = { kind: "number"; value: number; min: number; max: number; step: number };
 export type ColorDial = { kind: "color"; value: string };
 
+/** Which of Tailwind's default scales a class's value sits on, or `arbitrary` for one written in brackets. */
+export type Family = "spacing" | "radius" | "text" | "plain" | "arbitrary";
+
 export type Format =
-  | { kind: "tailwind"; prefix: string; family: "spacing" | "radius" | "text" | "plain" | "arbitrary"; unit: string; negative: boolean }
+  | { kind: "tailwind"; prefix: string; family: Family; unit: string }
   | { kind: "tailwindColor"; prefix: string }
   | { kind: "number" }
   | { kind: "unit"; unit: string }

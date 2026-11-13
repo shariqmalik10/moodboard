@@ -83,7 +83,7 @@ enum MainMenu {
 extension AppDelegate {
   @objc func addMaterial(_ sender: Any?) { model?.chrome?.chooseMaterial() }
   @objc func importFromPaper(_ sender: Any?) { model?.chrome?.state.onPaper() }
-  @objc func connectProject(_ sender: Any?) { model?.projects.choose() }
+  @objc func connectProject(_ sender: Any?) { model?.connector.choose() }
   @objc func showWelcome(_ sender: Any?) { model?.welcome.show() }
   @objc func checkForUpdates(_ sender: Any?) { updater?.check(quietly: false) }
   @objc func showWhatsNew(_ sender: Any?) { model?.whatsNew.show() }
@@ -113,7 +113,7 @@ extension AppDelegate {
 
 extension AppDelegate: NSMenuItemValidation {
   func validateMenuItem(_ item: NSMenuItem) -> Bool {
-    let current = model?.chrome?.state.mode ?? .wall
+    let current = model?.chrome?.state.view.mode ?? .wall
     switch item.action {
     case #selector(showWall(_:)): item.state = current == .wall ? .on : .off
     case #selector(showGrid(_:)): item.state = current == .grid ? .on : .off

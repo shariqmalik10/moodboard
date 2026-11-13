@@ -7,10 +7,8 @@ final class ChromeModel {
   var message: String?
   var showsPaper = false
   var showsProjects = false
-  var mode = ViewMode.wall
-  var filter = ProjectFilter.all
+  var view = ViewState()
   var projects: [String] = []
-  var refinement = Refinement()
   var counts: [Attention: Int] = [:]
   var searchFocus = 0
   var density = GridLayout.Density.medium
@@ -45,23 +43,23 @@ final class ChromeController {
 
   /// Keeps the project choices current, and the bar centred over what it sits above.
   func boardChanged() {
-    state.projects = model.store?.projects(componentsOnly: state.mode == .list) ?? []
-    center?.constant = state.mode == .list ? ListController.barOffset : 0
+    state.projects = model.store?.projects(componentsOnly: state.view.mode == .list) ?? []
+    center?.constant = state.view.mode == .list ? ListController.barOffset : 0
     state.density = model.canvas?.density ?? .medium
     windowResized()
     guard let store = model.store else { return }
-    let shown = store.visibleIds.compactMap { store.items[$0] }.filter { $0.isComponent && state.filter.includes($0) }.map { model.statuses.status($0.id) }
+    let shown = store.visibleIds.compactMap { store.items[$0] }.filter { $0.isComponent && state.view.filter.includes($0) }.map { model.statuses.status($0.id) }
     state.counts = Dictionary(uniqueKeysWithValues: Attention.allCases.map { attention in (attention, shown.filter { $0.matches(attention) }.count) })
     // A status with nothing left in it would leave the view empty with no way to see why.
-    if let attention = state.refinement.attention, state.counts[attention] == 0, !model.isTuningInList {
-      var next = state.refinement
+    if let attention = state.view.refinement.attention, state.counts[attention] == 0, !model.isTuningInList {
+      var next = state.view.refinement
       next.attention = nil
       model.refine(next)
     }
   }
 
   func windowResized() {
-    state.isCompact = state.mode == .list && (model.root.bounds.width < 1240)
+    state.isCompact = state.view.mode == .list && (model.root.bounds.width < 1240)
   }
 
   func importNode(_ node: PaperClient.Node) {
@@ -119,7 +117,7 @@ struct ChromeView: View {
       }
       VStack(spacing: 8) {
         bar
-        if state.mode == .grid { FilterStrip(state: state, app: model, isInSidebar: false) {} }
+        if state.view.mode == .grid { FilterStrip(state: state, app: model, isInSidebar: false) {} }
       }
     }
     .animation(.easeOut(duration: 0.2), value: state.message)
@@ -130,7 +128,7 @@ struct ChromeView: View {
   private var bar: some View {
     HStack(spacing: 0) {
       ForEach(ViewMode.allCases) { mode in
-        choice(isOn: state.mode == mode, marker: "mode", help: mode.title) {
+        choice(isOn: state.view.mode == mode, marker: "mode", help: mode.title) {
           model.show(mode)
         } label: {
           Image(systemName: mode.symbol).frame(width: 32, height: 32)
@@ -144,7 +142,7 @@ struct ChromeView: View {
             Button(Projects.name(project)) { model.show(filter: .project(project)) }
           }
         } label: {
-          Text(state.filter.title).font(.system(size: 12, weight: .medium))
+          Text(state.view.filter.title).font(.system(size: 12, weight: .medium))
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -182,7 +180,7 @@ struct ChromeView: View {
           state: model.projects.state,
           onConnect: {
             state.showsProjects = false
-            model.projects.choose()
+            model.connector.choose()
           },
           onDisconnect: { model.projects.disconnect(slug: $0) },
           onReveal: { NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: $0)]) }
@@ -200,7 +198,7 @@ struct ChromeView: View {
   }
 
   private func projectChoice(_ title: String, filter: ProjectFilter) -> some View {
-    choice(isOn: state.filter == filter, marker: "project", help: "Show \(title == "All" ? "everything" : title)") {
+    choice(isOn: state.view.filter == filter, marker: "project", help: "Show \(title == "All" ? "everything" : title)") {
       model.show(filter: filter)
     } label: {
       Text(title).font(.system(size: 12, weight: .medium)).padding(.horizontal, 9).frame(height: 28)
@@ -288,8 +286,8 @@ struct FilterStrip: View {
   private var search: some View {
     HStack(spacing: 6) {
       Image(systemName: "magnifyingglass").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-      TextField("Search", text: Binding(get: { state.refinement.query }, set: { next in
-        var refined = state.refinement
+      TextField("Search", text: Binding(get: { state.view.refinement.query }, set: { next in
+        var refined = state.view.refinement
         refined.query = next
         app.refine(refined)
       }))
@@ -306,7 +304,7 @@ struct FilterStrip: View {
         clearSearch()
         isSearching = false
       }
-      if !state.refinement.query.isEmpty {
+      if !state.view.refinement.query.isEmpty {
         Button(action: clearSearch) {
           Image(systemName: "xmark.circle.fill").font(.system(size: 11)).foregroundStyle(.secondary)
         }
@@ -321,22 +319,22 @@ struct FilterStrip: View {
   }
 
   private func clearSearch() {
-    var refined = state.refinement
+    var refined = state.view.refinement
     refined.query = ""
     app.refine(refined)
   }
 
   /// A status shows only when something has it, or while it's the one chosen.
   private var chips: [Attention] {
-    Attention.allCases.filter { (state.counts[$0] ?? 0) > 0 || state.refinement.attention == $0 }
+    Attention.allCases.filter { (state.counts[$0] ?? 0) > 0 || state.view.refinement.attention == $0 }
   }
 
   private func chipButtons(named: Bool) -> some View {
     ForEach(chips) { attention in
-      let isOn = state.refinement.attention == attention
+      let isOn = state.view.refinement.attention == attention
       let count = state.counts[attention] ?? 0
       Button {
-        var refined = state.refinement
+        var refined = state.view.refinement
         refined.attention = isOn ? nil : attention
         app.refine(refined)
       } label: {
@@ -360,7 +358,7 @@ struct FilterStrip: View {
   }
 
   @ViewBuilder private var updateAll: some View {
-    if state.refinement.attention == .paperChanged, (state.counts[.paperChanged] ?? 0) > 0 {
+    if state.view.refinement.attention == .paperChanged, (state.counts[.paperChanged] ?? 0) > 0 {
       Button("Update all") { Task { await app.importer?.updateChanged() } }
         .controlSize(.small)
         .help("Bring in every design that changed in Paper. Your tune stays wherever the design still has that value.")
